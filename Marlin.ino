@@ -46,7 +46,7 @@
 /* nothing here as of yet */
 
 // Common serial messages
-#define MSG_MARLIN "Marlin"
+#define MSG_MARLIN "CNC Laser Engraver "
 
 
 

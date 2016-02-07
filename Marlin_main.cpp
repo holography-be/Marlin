@@ -583,7 +583,7 @@ void loop()
   //manage_heater();
   manage_inactivity();
   checkHitEndstops();
-  lcd_update();
+  //lcd_update();
 }
 
 void get_command()
