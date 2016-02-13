@@ -21,16 +21,18 @@ void DAC::init(uint8_t dac_i2c_address, uint16_t min, uint16_t max) {
 	currentVoltage = 0.00;
 }
 
+// apply voltage to DAC (0..255) or (min to max)
 void DAC::setVoltage(uint16_t value) {
 	if (old_ivalue != value) {
 		uint16_t tempValue = (uint16_t)(map(constrain(value, _min, _max), _min, _max, 0, 4096));
 		_dac.setVoltage(tempValue, false);
-		currentVoltage = convertToVoltage(255);
+		currentVoltage = convertToVoltage(tempValue);
 		currentValue = value;
 		old_fvalue = currentVoltage;
 	}
 }
 
+// apply voltage to DAC (0..5v)
 void DAC::setVoltage(float value) {
 	if (value != old_fvalue) {
 		uint16_t tempValue = map((long)(constrain(value, 0.00, 5.00) * 100), 0, 500, 0, 4096);
