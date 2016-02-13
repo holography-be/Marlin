@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Marlin", "Marlin.vcxproj", "{6D0B439E-185F-448B-BBCD-0433997A0FA8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "readTemp", "..\..\Arduino\readTemp\readTemp.vcxproj", "{56585DF0-4278-4D7E-98D5-57BFA25972E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +17,10 @@ Global
 		{6D0B439E-185F-448B-BBCD-0433997A0FA8}.Debug|Win32.Build.0 = Debug|Win32
 		{6D0B439E-185F-448B-BBCD-0433997A0FA8}.Release|Win32.ActiveCfg = Release|Win32
 		{6D0B439E-185F-448B-BBCD-0433997A0FA8}.Release|Win32.Build.0 = Release|Win32
+		{56585DF0-4278-4D7E-98D5-57BFA25972E2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{56585DF0-4278-4D7E-98D5-57BFA25972E2}.Debug|Win32.Build.0 = Debug|Win32
+		{56585DF0-4278-4D7E-98D5-57BFA25972E2}.Release|Win32.ActiveCfg = Release|Win32
+		{56585DF0-4278-4D7E-98D5-57BFA25972E2}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
