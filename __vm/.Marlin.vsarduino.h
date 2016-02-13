@@ -84,12 +84,16 @@ extern "C" void __cxa_pure_virtual() {;}
 #define portInputRegister(P)
 #define portModeRegister(P)
 #include <..\Marlin\Marlin.pde>
+#include <..\Marlin\Adafruit_MCP4725.cpp>
+#include <..\Marlin\Adafruit_MCP4725.h>
 #include <..\Marlin\BlinkM.cpp>
 #include <..\Marlin\BlinkM.h>
 #include <..\Marlin\Configuration.h>
 #include <..\Marlin\ConfigurationStore.cpp>
 #include <..\Marlin\ConfigurationStore.h>
 #include <..\Marlin\Configuration_adv.h>
+#include <..\Marlin\DAC.cpp>
+#include <..\Marlin\DAC.h>
 #include <..\Marlin\DOGMbitmaps.h>
 #include <..\Marlin\LiquidCrystalRus.cpp>
 #include <..\Marlin\LiquidCrystalRus.h>

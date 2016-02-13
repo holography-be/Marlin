@@ -48,6 +48,7 @@
 #endif
 
 #include "WString.h"
+#include "DAC.h"
 
 #ifdef AT90USB
    #ifdef BTENABLED

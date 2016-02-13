@@ -25,7 +25,7 @@
 
 // This determines the communication speed of the printer
 // This determines the communication speed of the printer
-#define BAUDRATE 250000
+#define BAUDRATE 256000
 
 // This enables the serial port associated to the Bluetooth interface
 //#define BTENABLED              // Enable BT interface on AT90USB devices
@@ -731,5 +731,11 @@ const bool Z_MAX_ENDSTOP_INVERTING = true; // set to true to invert the logic of
 
 #include "Configuration_adv.h"
 //#include "thermistortables.h"
+
+/***************************************************************************
+* DAC (Ditigal to Analog converter) 
+****************************************************************************/
+#define DAC_MAX_VOLTAGE	5
+#define DAC_I2C_ADRESS 	0x62
 
 #endif //__CONFIGURATION_H

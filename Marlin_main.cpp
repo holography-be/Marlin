@@ -526,6 +526,8 @@ void setup()
   st_init();    // Initialize stepper, this enables interrupts!
   setup_photpin();
   servo_init();
+  Dac.init();
+  Dac.setVoltage(float(0.00));
   //lcd_splashscreen();
   //lcd_init();
 
