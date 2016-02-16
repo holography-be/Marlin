@@ -130,6 +130,9 @@
     <ClInclude Include="Adafruit_MCP4725.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LaserControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BlinkM.cpp">
@@ -196,6 +199,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Adafruit_MCP4725.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LaserControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -49,6 +49,7 @@
 
 #include "WString.h"
 #include "DAC.h"
+#include "LaserControl.h"
 
 #ifdef AT90USB
    #ifdef BTENABLED

@@ -260,22 +260,7 @@ int EtoPPressure=0;
   #endif
 #endif
 
-#ifdef DELTA
-  float delta[3] = {0.0, 0.0, 0.0};
-  #define SIN_60 0.8660254037844386
-  #define COS_60 0.5
-  // these are the default values, can be overriden with M665
-  float delta_radius= DELTA_RADIUS;
-  float delta_tower1_x= -SIN_60*delta_radius; // front left tower
-  float delta_tower1_y= -COS_60*delta_radius;	   
-  float delta_tower2_x=  SIN_60*delta_radius; // front right tower
-  float delta_tower2_y= -COS_60*delta_radius;	   
-  float delta_tower3_x= 0.0;                  // back middle tower
-  float delta_tower3_y= delta_radius;
-  float delta_diagonal_rod= DELTA_DIAGONAL_ROD;
-  float delta_diagonal_rod_2= sq(delta_diagonal_rod);
-  float delta_segments_per_second= DELTA_SEGMENTS_PER_SECOND;
-#endif					
+			
 
 //===========================================================================
 //=============================Private Variables=============================
@@ -471,6 +456,7 @@ void servo_init()
 
 void setup()
 {
+  analogReference(EXTERNAL);
   #ifdef LEDCONTROL		
    pinMode(REDPIN, OUTPUT);		
    pinMode(GREENPIN, OUTPUT);		
@@ -526,8 +512,12 @@ void setup()
   st_init();    // Initialize stepper, this enables interrupts!
   setup_photpin();
   servo_init();
-  Dac.init();
-  Dac.setVoltage(float(0.00)); // apply 0V to laser driver
+  // init Laser
+  LaserControl.init();
+  
+//  Dac.init();
+//  Dac.setVoltage(float(0.00)); // apply 0V to laser driver
+
   //lcd_splashscreen();
   //lcd_init();
 
@@ -797,64 +787,8 @@ XYZ_CONSTS_FROM_CONFIG(float, max_length,      MAX_LENGTH);
 XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
 XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 
-#ifdef DUAL_X_CARRIAGE
-  #if EXTRUDERS == 1 || defined(COREXY) \
-      || !defined(X2_ENABLE_PIN) || !defined(X2_STEP_PIN) || !defined(X2_DIR_PIN) \
-      || !defined(X2_HOME_POS) || !defined(X2_MIN_POS) || !defined(X2_MAX_POS) \
-      || !defined(X_MAX_PIN) || X_MAX_PIN < 0
-    #error "Missing or invalid definitions for DUAL_X_CARRIAGE mode."
-  #endif
-  #if X_HOME_DIR != -1 || X2_HOME_DIR != 1
-    #error "Please use canonical x-carriage assignment" // the x-carriages are defined by their homing directions
-  #endif
-
-#define DXC_FULL_CONTROL_MODE 0
-#define DXC_AUTO_PARK_MODE    1
-#define DXC_DUPLICATION_MODE  2
-static int dual_x_carriage_mode = DEFAULT_DUAL_X_CARRIAGE_MODE;
-
-static float x_home_pos(int extruder) {
-  if (extruder == 0)
-    return base_home_pos(X_AXIS) + add_homeing[X_AXIS];
-  else
-    // In dual carriage mode the extruder offset provides an override of the
-    // second X-carriage offset when homed - otherwise X2_HOME_POS is used.
-    // This allow soft recalibration of the second extruder offset position without firmware reflash
-    // (through the M218 command).
-    return (extruder_offset[X_AXIS][1] > 0) ? extruder_offset[X_AXIS][1] : X2_HOME_POS;
-}
-
-static int x_home_dir(int extruder) {
-  return (extruder == 0) ? X_HOME_DIR : X2_HOME_DIR;
-}
-
-static float inactive_extruder_x_pos = X2_MAX_POS; // used in mode 0 & 1
-static bool active_extruder_parked = false; // used in mode 1 & 2
-static float raised_parked_position[NUM_AXIS]; // used in mode 1
-static unsigned long delayed_move_time = 0; // used in mode 1
-static float duplicate_extruder_x_offset = DEFAULT_DUPLICATION_X_OFFSET; // used in mode 2
-static float duplicate_extruder_temp_offset = 0; // used in mode 2
-bool extruder_duplication_enabled = false; // used in mode 2
-#endif //DUAL_X_CARRIAGE
 
 static void axis_is_at_home(int axis) {
-#ifdef DUAL_X_CARRIAGE
-  if (axis == X_AXIS) {
-    if (active_extruder != 0) {
-      current_position[X_AXIS] = x_home_pos(active_extruder);
-      min_pos[X_AXIS] =          X2_MIN_POS;
-      max_pos[X_AXIS] =          max(extruder_offset[X_AXIS][1], X2_MAX_POS);
-      return;
-    }
-    else if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && active_extruder == 0) {
-      current_position[X_AXIS] = base_home_pos(X_AXIS) + add_homeing[X_AXIS];
-      min_pos[X_AXIS] =          base_min_pos(X_AXIS) + add_homeing[X_AXIS];
-      max_pos[X_AXIS] =          min(base_max_pos(X_AXIS) + add_homeing[X_AXIS],
-                                  max(extruder_offset[X_AXIS][1], X2_MAX_POS) - duplicate_extruder_x_offset);
-      return;
-    }
-  }
-#endif
   current_position[axis] = base_home_pos(axis) + add_homeing[axis];
   min_pos[axis] =          base_min_pos(axis) + add_homeing[axis];
   max_pos[axis] =          base_max_pos(axis) + add_homeing[axis];
@@ -1047,10 +981,6 @@ static void homeaxis(int axis) {
       axis==Z_AXIS ? HOMEAXIS_DO(Z) :
       0) {
     int axis_home_dir = home_dir(axis);
-#ifdef DUAL_X_CARRIAGE
-    if (axis == X_AXIS)
-      axis_home_dir = x_home_dir(active_extruder);
-#endif
 
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
@@ -1088,15 +1018,7 @@ static void homeaxis(int axis) {
 #endif
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-#ifdef DELTA
-    // retrace by the amount specified in endstop_adj
-    if (endstop_adj[axis] * axis_home_dir < 0) {
-      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-      destination[axis] = endstop_adj[axis];
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-      st_synchronize();
-    }
-#endif
+
     axis_is_at_home(axis);
     destination[axis] = current_position[axis];
     feedrate = 0.0;
@@ -1241,38 +1163,6 @@ void process_commands()
         destination[i] = current_position[i];
       }
       feedrate = 0.0;
-
-#ifdef DELTA
-          // A delta can only safely home all axis at the same time
-          // all axis have to home at the same time
-
-          // Move all carriages up together until the first endstop is hit.
-          current_position[X_AXIS] = 0;
-          current_position[Y_AXIS] = 0;
-          current_position[Z_AXIS] = 0;
-          plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-
-          destination[X_AXIS] = 3 * Z_MAX_LENGTH;
-          destination[Y_AXIS] = 3 * Z_MAX_LENGTH;
-          destination[Z_AXIS] = 3 * Z_MAX_LENGTH;
-          feedrate = 1.732 * homing_feedrate[X_AXIS];
-          plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-          st_synchronize();
-          endstops_hit_on_purpose();
-
-          current_position[X_AXIS] = destination[X_AXIS];
-          current_position[Y_AXIS] = destination[Y_AXIS];
-          current_position[Z_AXIS] = destination[Z_AXIS];
-
-          // take care of back off and rehome now we are all at the top
-          HOMEAXIS(X);
-          HOMEAXIS(Y);
-          HOMEAXIS(Z);
-
-          calculate_delta(current_position);
-          plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
-
-#else // NOT DELTA
 
       home_all_axis = !((code_seen(axis_codes[X_AXIS])) || (code_seen(axis_codes[Y_AXIS])) || (code_seen(axis_codes[Z_AXIS])));
 
@@ -1428,7 +1318,7 @@ void process_commands()
         }
       #endif
       plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-#endif // else DELTA
+
 
       #ifdef ENDSTOPS_ONLY_FOR_HOMING
         enable_endstops(false);

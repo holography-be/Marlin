@@ -491,6 +491,8 @@ ISR(TIMER1_COMPA_vect)
 
 
     for(int8_t i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
+		// Check if endstop reached
+	  if (endstop_x_hit || endstop_y_hit || endstop_z_hit) break;
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
       #endif

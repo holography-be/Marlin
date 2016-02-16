@@ -107,6 +107,7 @@
     <ClInclude Include="language.h">
       <FileType>CppCode</FileType>
     </ClInclude>
+    <ClInclude Include="LaserControl.h" />
     <ClInclude Include="LiquidCrystalRus.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -188,6 +189,7 @@
     <ClCompile Include="ConfigurationStore.cpp" />
     <ClCompile Include="DAC.cpp" />
     <ClCompile Include="digipot_mcp4451.cpp" />
+    <ClCompile Include="LaserControl.cpp" />
     <ClCompile Include="LiquidCrystalRus.cpp" />
     <ClCompile Include="MarlinSerial.cpp" />
     <ClCompile Include="Marlin_main.cpp" />

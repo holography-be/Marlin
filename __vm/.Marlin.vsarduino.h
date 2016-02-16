@@ -95,6 +95,8 @@ extern "C" void __cxa_pure_virtual() {;}
 #include <..\Marlin\DAC.cpp>
 #include <..\Marlin\DAC.h>
 #include <..\Marlin\DOGMbitmaps.h>
+#include <..\Marlin\LaserControl.cpp>
+#include <..\Marlin\LaserControl.h>
 #include <..\Marlin\LiquidCrystalRus.cpp>
 #include <..\Marlin\LiquidCrystalRus.h>
 #include <..\Marlin\Marlin.h>

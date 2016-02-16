@@ -19,7 +19,7 @@ class DAC
 	 uint16_t _max;
 	 float old_fvalue;
 	 uint16_t old_ivalue;
-
+	float convertToVoltage(uint16_t value);
 
  public:
 	void init();
@@ -27,12 +27,13 @@ class DAC
 	void init(uint8_t dac_i2c_address, uint16_t min, uint16_t max);
 	void setVoltage(uint16_t value);
 	void setVoltage(float value);
+	void setMinMax(uint16_t min, uint16_t max);
 	uint16_t currentValue;
 	float currentVoltage;
-	float convertToVoltage(uint16_t value);
-};
+	uint16_t getMin();
+	uint16_t getMax();
 
-extern DAC Dac;
+};
 
 #endif
 

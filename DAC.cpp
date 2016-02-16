@@ -30,6 +30,7 @@ void DAC::setVoltage(uint16_t value) {
 		currentValue = value;
 		old_fvalue = currentVoltage;
 	}
+	return;
 }
 
 // apply voltage to DAC (0..5v)
@@ -42,6 +43,7 @@ void DAC::setVoltage(float value) {
 		old_ivalue = currentValue;
 		old_fvalue = currentVoltage;
 	}
+	return;
 }
 
 
@@ -49,6 +51,18 @@ float DAC::convertToVoltage(uint16_t value) {
 	return map(value, 0, 4096, 0, 500) / 100;
 }
 
+uint16_t DAC::getMin() {
+	return _min;
+}
 
-DAC Dac;
+uint16_t DAC::getMax() {
+	return _max;
+}
+
+void DAC::setMinMax(uint16_t min, uint16_t max) {
+	_min = min;
+	_max = max;
+	return;
+}
+
 
