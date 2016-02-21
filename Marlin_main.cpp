@@ -172,6 +172,16 @@
 // M928 - Start SD logging (M928 filename.g) - ended by M29 REMOVE
 // M999 - Restart after being stopped by error
 
+// Laser Commands
+// L0   - Laser OFF
+// L1   - Laser ON
+// L2   - Set laser power
+// L3   - Get laser power
+// L4   - Set laser level
+// L5   - Get laser level
+// L6   - Get laser Temp
+// L999 - Laser Emergency stop
+
 //Stepper Movement Variables
 
 //===========================================================================
@@ -191,6 +201,7 @@ float homing_feedrate[] = HOMING_FEEDRATE;
 bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
+
 ////int extrudemultiply=100; //100->1 200->2
 ////int extruder_multiply[EXTRUDERS] = {100
 ////  #if EXTRUDERS > 1
@@ -217,6 +228,8 @@ float min_pos[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float max_pos[3] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
 bool axis_known_position[3] = {false, false, false};
 float zprobe_zoffset;
+uint16_t laserPower;
+float laserTemp;
 
 // Extruder offset
 #if EXTRUDERS > 1
@@ -456,7 +469,14 @@ void servo_init()
 
 void setup()
 {
-  analogReference(EXTERNAL);
+  analogReference(EXTERNAL);  // for thermistors
+  //digitalWrite(Relais1, HIGH);
+  //digitalWrite(Relais2, HIGH);
+  //digitalWrite(Relais3, HIGH);
+  pinMode(ModuleRelais1Power, OUTPUT);
+  digitalWrite(ModuleRelais1Power, LOW);
+  pinMode(ModuleRelais2Power, OUTPUT);
+  digitalWrite(ModuleRelais2Power, LOW);
   #ifdef LEDCONTROL		
    pinMode(REDPIN, OUTPUT);		
    pinMode(GREENPIN, OUTPUT);		
@@ -1525,8 +1545,8 @@ void process_commands()
     }
   }
 
-  else if(code_seen('M'))
-  {
+  else if (code_seen('M'))
+  { 
     switch( (int)code_value() )
     {
 #ifdef ULTIPANEL
@@ -2086,6 +2106,7 @@ void process_commands()
       lcd_setstatus(strchr_pointer + 5);
       break;
     case 114: // M114
+	  laserTemp = LaserControl.getTemp();
       SERIAL_PROTOCOLPGM("X:");
       SERIAL_PROTOCOL(current_position[X_AXIS]);
       SERIAL_PROTOCOLPGM(" Y:");
@@ -2094,7 +2115,8 @@ void process_commands()
       SERIAL_PROTOCOL(current_position[Z_AXIS]);
       SERIAL_PROTOCOLPGM(" E:");
       SERIAL_PROTOCOL(current_position[E_AXIS]);
-
+	  SERIAL_PROTOCOLPGM(" TL:");
+	  SERIAL_PROTOCOL(laserTemp);
       SERIAL_PROTOCOLPGM(MSG_COUNT_X);
       SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
       SERIAL_PROTOCOLPGM(" Y:");
@@ -2923,7 +2945,70 @@ void process_commands()
     break;
     }
   }
-
+  // Laser Commands - Added by JDU
+  else if (code_seen('L')) 
+  {
+	  switch ((int)code_value())
+	  {
+		  case 0:	// Set laser OFF
+			  LaserControl.Stop();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHOLN("Laser: OFF");
+			  break;
+		  case 1:	// Set laser ON
+			  LaserControl.Start();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHOLN("Laser: ON");
+			  break;
+		  case 2:	// Set laser power
+			  if (code_seen('S')) { // 0->255
+				  laserPower = code_value_long();
+				  if ((laserPower >= 0) || (laserPower <= 255)) {
+					  LaserControl.setPower(laserPower);
+				  }
+				  else {
+					  SERIAL_ERROR_START;
+					  SERIAL_ERRORLN("LaserPower: Bad value");
+				  }
+			  }
+			  break;
+		  case 3:	// get Laser Power
+			  laserPower = LaserControl.getPower();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHO("LaserPower: ");
+			  SERIAL_ECHOLN(laserPower);
+			  break;
+		  case 4:	// set Laser level
+			  if (code_seen('S')) { // 0->255
+				  laserPower = code_value_long();
+				  if ((laserPower >= 0) || (laserPower <= 255)) {
+					  LaserControl.setLevel(laserPower);
+				  }
+				  else {
+					  SERIAL_ERROR_START;
+					  SERIAL_ERRORLN("LaserPower: Bad value");
+				  }
+			  }
+			  break;
+		  case 5:	// get Laser Level
+			  laserPower = LaserControl.getLevel();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHO("LaserLevel: ");
+			  SERIAL_ECHOLN(laserPower);
+			  break;
+		  case 6: // Get Laser Temp
+			  laserTemp = LaserControl.getTemp();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHO("LaserTemp: ");
+			  SERIAL_ECHOLN(laserTemp);
+			  break;
+		  case 999: // Laser Emergency stop
+			  LaserControl.EmergencyStop();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHOLN("Laser: OFF");
+			  break;
+	  }
+  }
   else if(code_seen('T'))
   {
     tmp_extruder = code_value();

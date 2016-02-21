@@ -21,11 +21,16 @@ class LaserControlClass
 	const uint16_t _delai = Laser_Delai_Sequence;
  public:
 	void init();
-	DAC getDac();
+	//DAC getDac();
 	bool Start();
 	bool Stop();
 	bool EmergencyStop();
 	float getTemp();
+	bool isON();
+	void setLevel(uint16_t value);
+	void setPower(uint16_t value);
+	uint16_t getLevel();
+	uint16_t getPower();
 };
 
 extern LaserControlClass LaserControl;

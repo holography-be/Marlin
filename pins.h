@@ -65,15 +65,17 @@
     #define FAN_PIN            8 
 
 	#define Relais1			   41
-	#define Relais2				42
-	#define Relais3				43
+	#define Relais2			   42
+	#define Relais3			   43
+	#define ModuleRelais1Power  44
+	#define ModuleRelais2Power	45
 	#define Laser_Driver_PIN		Relais1
 	#define Laser_Peltier_PIN		Relais2
 	#define Laser_Diode_PIN			Relais3
 	#define Laser_Temp_PIN			A0 // ANALOG
 	#define Laser_Start_Sequence	Laser_Driver_PIN,Laser_Peltier_PIN,Laser_Diode_PIN
 	#define Laser_Stop_Sequence		Laser_Diode_PIN,Laser_Peltier_PIN,Laser_Driver_PIN
-	#define Laser_Delai_Sequence	500
+	#define Laser_Delai_Sequence	1500
 
   #define PS_ON_PIN          -1
   #define KILL_PIN           -1

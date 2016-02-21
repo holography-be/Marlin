@@ -5,48 +5,80 @@
 #include "Marlin.h"
 #include "LaserControl.h"
 
+bool _isON;
+
 void LaserControlClass::init()
 {
+
 	dac.init(DAC_I2C_ADRESS, 0, 255);
 	dac.setVoltage(uint16_t(0));
 	for (int i = 0; i < 3; i++) {
 		pinMode(_startSequence[i],OUTPUT);
+		digitalWrite(_startSequence[i],HIGH);
 	}
+	digitalWrite(ModuleRelais1Power, HIGH);
+	digitalWrite(ModuleRelais2Power, HIGH);
 }
 
 bool LaserControlClass::Start() {
-	// sortie driver à zéro
-	dac.setVoltage(uint16_t(0));
-	delay(Laser_Delai_Sequence);
-	for (int i = 0; i < 3; i++) {
-		digitalWrite(_startSequence[i], LOW);
-		delay(Laser_Delai_Sequence);
+	if (!_isON) {
+		// sortie driver à zéro
+		dac.setPower(uint16_t(0));
+		for (int i = 0; i < 3; i++) {
+			digitalWrite(_startSequence[i], LOW);
+			delay(Laser_Delai_Sequence);
+		}
+		delay(500);
+		_isON = true;
 	}
-	delay(500);
 	return true;
 }
 
 bool LaserControlClass::Stop() {
-	dac.setVoltage(uint16_t(0));
-	delay(500);
-	for (int i = 0; i < 3; i++) {
-		digitalWrite(_startSequence[i],HIGH);
-		delay(Laser_Delai_Sequence);
+	if (_isON) {
+		dac.setPower(uint16_t(0));
+		for (int i = 0; i < 3; i++) {
+			digitalWrite(_stopSequence[i],HIGH);
+			delay(Laser_Delai_Sequence);
+		}
+		_isON = false;
 	}
 	return true;
 }
 
 bool LaserControlClass::EmergencyStop() {
-	dac.setVoltage(uint16_t(0));
-	for (int i = 0; i < 3; i++) {
-		digitalWrite(_startSequence[i], HIGH);
+	if (_isON) {
+		dac.setVoltage(uint16_t(0));
+		for (int i = 0; i < 3; i++) {
+			digitalWrite(_stopSequence[i], HIGH);
+		}
+		_isON = false;
 	}
 	return true;
 }
 
-DAC LaserControlClass::getDac() {
-	return LaserControlClass::dac;
+void LaserControlClass::setPower(uint16_t value) {
+	if (!_isON) return;
+	if (value == dac.getPower()) return;
+	dac.setPower(value);
+	return;
 }
+
+uint16_t LaserControlClass::getPower() {
+	return dac.getPower();
+}
+
+void LaserControlClass::setLevel(uint16_t value) {
+	if (!_isON) return;
+	if (value == dac.getLevel()) return;
+	dac.setLevel(value);
+	return;
+}
+
+uint16_t LaserControlClass::getLevel() {
+	return dac.getLevel();
+}
+
 
 float LaserControlClass::getTemp() {
 	// resistance at 25 degrees C
@@ -81,6 +113,10 @@ float LaserControlClass::getTemp() {
 	steinhart = 1.0 / steinhart;                 // Invert
 	steinhart -= 273.15;                         // convert to C
 	return steinhart;
+}
+
+bool LaserControlClass::isON() {
+	return _isON;
 }
 
 LaserControlClass LaserControl;

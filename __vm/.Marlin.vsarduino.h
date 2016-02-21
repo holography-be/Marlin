@@ -120,6 +120,7 @@ extern "C" void __cxa_pure_virtual() {;}
 #include <..\Marlin\SdVolume.h>
 #include <..\Marlin\Servo.cpp>
 #include <..\Marlin\Servo.h>
+#include <..\Marlin\Tones.h>
 #include <..\Marlin\cardreader.cpp>
 #include <..\Marlin\cardreader.h>
 #include <..\Marlin\digipot_mcp4451.cpp>

@@ -17,6 +17,8 @@ void DAC::init(uint8_t dac_i2c_address, uint16_t min, uint16_t max) {
 	_dac.begin(dac_i2c_address);
 	DAC::_min = min;
 	DAC::_max = max;
+	_currentPower = 0;
+	_currentLevel = 0;
 	currentValue = 0;
 	currentVoltage = 0.00;
 }
@@ -27,7 +29,7 @@ void DAC::setVoltage(uint16_t value) {
 		uint16_t tempValue = (uint16_t)(map(constrain(value, _min, _max), _min, _max, 0, 4096));
 		_dac.setVoltage(tempValue, false);
 		currentVoltage = convertToVoltage(tempValue);
-		currentValue = value;
+		currentValue = tempValue;
 		old_fvalue = currentVoltage;
 	}
 	return;
@@ -62,7 +64,49 @@ uint16_t DAC::getMax() {
 void DAC::setMinMax(uint16_t min, uint16_t max) {
 	_min = min;
 	_max = max;
+	// Recalcul puissance
+	setVoltage(currentValue);
 	return;
 }
+
+void DAC::setPercentVoltage(uint16_t value) {
+	if (value >= 0 && value <= 100) {
+		float tempValue = ((float)map(value, 0, 100, 0, 500))/100;
+		setVoltage(tempValue);
+	}
+	return;
+}
+//
+// set Level from 0 to 255
+void DAC::setLevel(uint16_t value) {
+	if (value >= 0 || value <= 255) {
+		uint16_t tempValue = map(value, 0, 255, 0, 4096);
+		_dac.setVoltage(tempValue, false);
+		_currentLevel = tempValue;
+		_currentPower = map(tempValue, 0, 4096, 0, 100);
+	}
+	return;
+}
+
+//
+// set Power from 0 to 100%
+void DAC::setPower(uint16_t value) {
+	if (value >= 0 || value <= 100) {
+		uint16_t tempValue = map(value, 0, 100, 0, 4096);
+		_dac.setVoltage(tempValue, false);
+		_currentLevel = map(tempValue, 0, 4096, 0, 255);
+		_currentPower = tempValue;
+	}
+	return;
+}
+
+uint16_t DAC::getLevel() {
+	return _currentLevel;
+}
+
+uint16_t DAC::getPower() {
+	return _currentPower;
+}
+
 
 
