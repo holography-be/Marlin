@@ -165,6 +165,7 @@
     <ClInclude Include="stepper.h">
       <FileType>CppCode</FileType>
     </ClInclude>
+    <ClInclude Include="Thermistor.h" />
     <ClInclude Include="Tones.h" />
     <ClInclude Include="ultralcd.h">
       <FileType>CppCode</FileType>
@@ -204,6 +205,7 @@
     <ClCompile Include="SdVolume.cpp" />
     <ClCompile Include="Servo.cpp" />
     <ClCompile Include="stepper.cpp" />
+    <ClCompile Include="Thermistor.cpp" />
     <ClCompile Include="ultralcd.cpp" />
     <ClCompile Include="vector_3.cpp" />
     <ClCompile Include="watchdog.cpp" />

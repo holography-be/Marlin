@@ -25,12 +25,15 @@ class LaserControlClass
 	bool Start();
 	bool Stop();
 	bool EmergencyStop();
-	float getTemp();
 	bool isON();
+	void setMaxPower(uint16_t value);
+	uint16_t getMaxPower();
+	uint16_t getRealPower();
 	void setLevel(uint16_t value);
 	void setPower(uint16_t value);
 	uint16_t getLevel();
 	uint16_t getPower();
+	float getTemp();
 };
 
 extern LaserControlClass LaserControl;

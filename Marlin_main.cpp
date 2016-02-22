@@ -180,6 +180,8 @@
 // L4   - Set laser level
 // L5   - Get laser level
 // L6   - Get laser Temp
+// L7   - Set Max Power
+// L8   - Get Max Power
 // L999 - Laser Emergency stop
 
 //Stepper Movement Variables
@@ -230,6 +232,7 @@ bool axis_known_position[3] = {false, false, false};
 float zprobe_zoffset;
 uint16_t laserPower;
 float laserTemp;
+uint16_t laserMaxPower;
 
 // Extruder offset
 #if EXTRUDERS > 1
@@ -2963,7 +2966,7 @@ void process_commands()
 		  case 2:	// Set laser power
 			  if (code_seen('S')) { // 0->255
 				  laserPower = code_value_long();
-				  if ((laserPower >= 0) || (laserPower <= 255)) {
+				  if ((laserPower >= 0) && (laserPower <= 100)) {
 					  LaserControl.setPower(laserPower);
 				  }
 				  else {
@@ -2981,7 +2984,7 @@ void process_commands()
 		  case 4:	// set Laser level
 			  if (code_seen('S')) { // 0->255
 				  laserPower = code_value_long();
-				  if ((laserPower >= 0) || (laserPower <= 255)) {
+				  if ((laserPower >= 0) && (laserPower <= 255)) {
 					  LaserControl.setLevel(laserPower);
 				  }
 				  else {
@@ -3001,6 +3004,26 @@ void process_commands()
 			  SERIAL_ECHO_START;
 			  SERIAL_ECHO("LaserTemp: ");
 			  SERIAL_ECHOLN(laserTemp);
+			  break;
+		  case 7:	// Set Max Power
+			  if (code_seen('S')) {
+				  laserMaxPower = code_value_long();
+				  if (laserMaxPower > 0 && laserMaxPower < 100) {
+					  LaserControl.setMaxPower(laserMaxPower);
+				  }
+			  }
+			  break;
+		  case 8:
+			  laserMaxPower = LaserControl.getMaxPower();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHO("LaserMaxPower: ");
+			  SERIAL_ECHOLN(laserMaxPower);
+			  break;
+		  case 9:
+			  laserMaxPower = LaserControl.getRealPower();
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHO("LaserRealPower: ");
+			  SERIAL_ECHOLN(laserMaxPower);
 			  break;
 		  case 999: // Laser Emergency stop
 			  LaserControl.EmergencyStop();
