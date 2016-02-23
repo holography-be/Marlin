@@ -62,6 +62,8 @@ uint16_t DAC::getMax() {
 }
 
 void DAC::setMaxPower(uint16_t max) {
+	// shut off
+	setPower(0);
 	_max = max;
 	_realMax = uint16_t(float(40.96 * _max));
 	// Recalcul puissance
