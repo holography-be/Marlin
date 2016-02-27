@@ -30,31 +30,35 @@
 
 #if MOTHERBOARD == 77
 
-    #define X_STEP_PIN         22
     #define X_DIR_PIN          23
-    #define X_ENABLE_PIN       24
-    #define X_MIN_PIN          25
-    #define X_MAX_PIN          26   
+    #define X_STEP_PIN         25
+    #define X_ENABLE_PIN       27
+    #define X_MIN_PIN          22
+    #define X_MAX_PIN          24   
 
-    #define Y_STEP_PIN         27
-    #define Y_DIR_PIN          28
-    #define Y_ENABLE_PIN       29
-    #define Y_MIN_PIN          30
-    #define Y_MAX_PIN          31
+    #define Y_DIR_PIN          29
+    #define Y_STEP_PIN         31
+    #define Y_ENABLE_PIN       33
+    #define Y_MIN_PIN          26
+    #define Y_MAX_PIN          28
 
-    #define Z_STEP_PIN         32
-    #define Z_DIR_PIN          33
-    #define Z_ENABLE_PIN       34
-    #define Z_MIN_PIN          35
-    #define Z_MAX_PIN          36
+    #define Z_DIR_PIN          35
+    #define Z_STEP_PIN         37
+    #define Z_ENABLE_PIN       39
+    #define Z_MIN_PIN          30
+    #define Z_MAX_PIN          32
 
     #define Z2_STEP_PIN        -1
     #define Z2_DIR_PIN         -1
     #define Z2_ENABLE_PIN      -1
 
-    #define E0_STEP_PIN        37
-    #define E0_DIR_PIN         38
-    #define E0_ENABLE_PIN      39
+    #define E0_DIR_PIN         41
+    #define E0_STEP_PIN        43
+    #define E0_ENABLE_PIN      45
+
+	#define PROBE_Z_PIN		   34
+	#define INTERLOCK_PIN      36
+
 
     #define SDPOWER            -1
     #define SDSS               53
@@ -64,11 +68,11 @@
 
     #define FAN_PIN            8 
 
-	#define Relais1			   41
-	#define Relais2			   42
-	#define Relais3			   43
-	#define ModuleRelais1Power  44
-	#define ModuleRelais2Power	45
+	#define Relais1			   42
+	#define Relais2			   40
+	#define Relais3			   46
+    #define Relais4            44
+	#define ModuleRelaisPower  48
 	#define Laser_Driver_PIN		Relais1
 	#define Laser_Peltier_PIN		Relais2
 	#define Laser_Diode_PIN			Relais3

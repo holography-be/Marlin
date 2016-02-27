@@ -476,10 +476,8 @@ void setup()
   //digitalWrite(Relais1, HIGH);
   //digitalWrite(Relais2, HIGH);
   //digitalWrite(Relais3, HIGH);
-  pinMode(ModuleRelais1Power, OUTPUT);
-  digitalWrite(ModuleRelais1Power, LOW);
-  pinMode(ModuleRelais2Power, OUTPUT);
-  digitalWrite(ModuleRelais2Power, LOW);
+  pinMode(ModuleRelaisPower, OUTPUT);
+  digitalWrite(ModuleRelaisPower, LOW);
   #ifdef LEDCONTROL		
    pinMode(REDPIN, OUTPUT);		
    pinMode(GREENPIN, OUTPUT);		
@@ -1111,6 +1109,7 @@ void process_commands()
 #endif
   if(code_seen('G'))
   {
+	  digitalWrite(13, !digitalRead(13));
     switch((int)code_value())
     {
     case 0: // G0 -> G1
@@ -2122,11 +2121,12 @@ void process_commands()
 	  SERIAL_PROTOCOL(laserTemp);
       SERIAL_PROTOCOLPGM(MSG_COUNT_X);
       SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM(" Y:");
+      SERIAL_PROTOCOLPGM(" Count Y:");
       SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM(" Z:");
+      SERIAL_PROTOCOLPGM(" Count Z:");
       SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-
+	  SERIAL_PROTOCOLPGM(" Count E:");
+	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
       SERIAL_PROTOCOLLN("");
       break;
     case 120: // M120

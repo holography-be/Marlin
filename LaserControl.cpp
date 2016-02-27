@@ -16,8 +16,7 @@ void LaserControlClass::init()
 		pinMode(_startSequence[i],OUTPUT);
 		digitalWrite(_startSequence[i],HIGH);
 	}
-	digitalWrite(ModuleRelais1Power, HIGH);
-	digitalWrite(ModuleRelais2Power, HIGH);
+	digitalWrite(ModuleRelaisPower, HIGH);
 }
 
 bool LaserControlClass::Start() {
