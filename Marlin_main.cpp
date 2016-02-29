@@ -123,6 +123,8 @@
 // M115 - Capabilities string
 // M117 - display message REMOVE
 // M119 - Output Endstop status to serial port
+// M120 - Enable EndStops
+// M121 - Disable EndStops
 // M126 - Solenoid Air Valve Open (BariCUDA support by jmil)
 // M127 - Solenoid Air Valve Closed (BariCUDA vent to atmospheric pressure by jmil)
 // M128 - EtoP Open (BariCUDA EtoP = electricity to air pressure transducer by jmil)
@@ -556,39 +558,9 @@ void loop()
 {
   if(buflen < (BUFSIZE-1))
     get_command();
-  #ifdef SDSUPPORT
-  card.checkautostart(false);
-  #endif
   if(buflen)
   {
-    #ifdef SDSUPPORT
-      if(card.saving)
-      {
-        if(strstr_P(cmdbuffer[bufindr], PSTR("M29")) == NULL)
-        {
-          card.write_command(cmdbuffer[bufindr]);
-          if(card.logging)
-          {
-            process_commands();
-          }
-          else
-          {
-            SERIAL_PROTOCOLLNPGM(MSG_OK);
-          }
-        }
-        else
-        {
-          card.closefile();
-          SERIAL_PROTOCOLLNPGM(MSG_FILE_SAVED);
-        }
-      }
-      else
-      {
-        process_commands();
-      }
-    #else
-      process_commands();
-    #endif //SDSUPPORT
+    process_commands();
     buflen = (buflen-1);
     bufindr = (bufindr + 1)%BUFSIZE;
   }
@@ -1109,7 +1081,6 @@ void process_commands()
 #endif
   if(code_seen('G'))
   {
-	  digitalWrite(13, !digitalRead(13));
     switch((int)code_value())
     {
     case 0: // G0 -> G1
@@ -2109,31 +2080,31 @@ void process_commands()
       break;
     case 114: // M114
 	  laserTemp = LaserControl.getTemp();
-      SERIAL_PROTOCOLPGM("X:");
+      SERIAL_PROTOCOLPGM("DEST X:");
       SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM(" Y:");
+      SERIAL_PROTOCOLPGM(" DEST Y:");
       SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM(" Z:");
+      SERIAL_PROTOCOLPGM(" DEST Z:");
       SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM(" E:");
+      SERIAL_PROTOCOLPGM(" DEST E:");
       SERIAL_PROTOCOL(current_position[E_AXIS]);
 	  SERIAL_PROTOCOLPGM(" TL:");
 	  SERIAL_PROTOCOL(laserTemp);
       SERIAL_PROTOCOLPGM(MSG_COUNT_X);
       SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM(" Count Y:");
+      SERIAL_PROTOCOLPGM(" CURRENT Y:");
       SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM(" Count Z:");
+      SERIAL_PROTOCOLPGM(" CURRENT Z:");
       SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-	  SERIAL_PROTOCOLPGM(" Count E:");
+	  SERIAL_PROTOCOLPGM(" CURRENT E:");
 	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
       SERIAL_PROTOCOLLN("");
       break;
     case 120: // M120
-      enable_endstops(false) ;
+      enable_endstops(true) ;
       break;
     case 121: // M121
-      enable_endstops(true) ;
+      enable_endstops(false) ;
       break;
     case 119: // M119
     SERIAL_PROTOCOLLN(MSG_M119_REPORT);
@@ -2230,7 +2201,7 @@ void process_commands()
     case 204: // M204 acclereration S normal moves T filmanent only moves
       {
         if(code_seen('S')) acceleration = code_value() ;
-        if(code_seen('T')) retract_acceleration = code_value() ;
+        //if(code_seen('T')) retract_acceleration = code_value() ;  pas besoin
       }
       break;
     case 205: //M205 advanced settings:  minimum travel speed S=while printing T=travel only,  B=minimum segment time X= maximum xy jerk, Z=maximum Z jerk
@@ -2702,182 +2673,6 @@ void process_commands()
     }
     #endif // CUSTOM_M_CODE_SET_Z_PROBE_OFFSET
 
-    #ifdef FILAMENTCHANGEENABLE
-    case 600: //Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
-    {
-        float target[4];
-        float lastpos[4];
-        target[X_AXIS]=current_position[X_AXIS];
-        target[Y_AXIS]=current_position[Y_AXIS];
-        target[Z_AXIS]=current_position[Z_AXIS];
-        target[E_AXIS]=current_position[E_AXIS];
-        lastpos[X_AXIS]=current_position[X_AXIS];
-        lastpos[Y_AXIS]=current_position[Y_AXIS];
-        lastpos[Z_AXIS]=current_position[Z_AXIS];
-        lastpos[E_AXIS]=current_position[E_AXIS];
-        //retract by E
-        if(code_seen('E'))
-        {
-          target[E_AXIS]+= code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_FIRSTRETRACT
-            target[E_AXIS]+= FILAMENTCHANGE_FIRSTRETRACT ;
-          #endif
-        }
-        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
-
-        //lift Z
-        if(code_seen('Z'))
-        {
-          target[Z_AXIS]+= code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_ZADD
-            target[Z_AXIS]+= FILAMENTCHANGE_ZADD ;
-          #endif
-        }
-        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
-
-        //move xy
-        if(code_seen('X'))
-        {
-          target[X_AXIS]+= code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_XPOS
-            target[X_AXIS]= FILAMENTCHANGE_XPOS ;
-          #endif
-        }
-        if(code_seen('Y'))
-        {
-          target[Y_AXIS]= code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_YPOS
-            target[Y_AXIS]= FILAMENTCHANGE_YPOS ;
-          #endif
-        }
-
-        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
-
-        if(code_seen('L'))
-        {
-          target[E_AXIS]+= code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_FINALRETRACT
-            target[E_AXIS]+= FILAMENTCHANGE_FINALRETRACT ;
-          #endif
-        }
-
-        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
-
-        //finish moves
-        st_synchronize();
-        //disable extruder steppers so filament can be removed
-        disable_e0();
-        disable_e1();
-        disable_e2();
-        delay(100);
-        LCD_ALERTMESSAGEPGM(MSG_FILAMENTCHANGE);
-        uint8_t cnt=0;
-        while(!lcd_clicked()){
-          cnt++;
-          manage_heater();
-          manage_inactivity();
-          lcd_update();
-          if(cnt==0)
-          {
-          #if BEEPER > 0
-            SET_OUTPUT(BEEPER);
-
-            WRITE(BEEPER,HIGH);
-            delay(3);
-            WRITE(BEEPER,LOW);
-            delay(3);
-          #else
-			#if !defined(LCD_FEEDBACK_FREQUENCY_HZ) || !defined(LCD_FEEDBACK_FREQUENCY_DURATION_MS)
-              lcd_buzz(1000/6,100);
-			#else
-			  lcd_buzz(LCD_FEEDBACK_FREQUENCY_DURATION_MS,LCD_FEEDBACK_FREQUENCY_HZ);
-			#endif
-          #endif
-          }
-        }
-
-        //return to normal
-        if(code_seen('L'))
-        {
-          target[E_AXIS]+= -code_value();
-        }
-        else
-        {
-          #ifdef FILAMENTCHANGE_FINALRETRACT
-            target[E_AXIS]+=(-1)*FILAMENTCHANGE_FINALRETRACT ;
-          #endif
-        }
-        current_position[E_AXIS]=target[E_AXIS]; //the long retract of L is compensated by manual filament feeding
-        plan_set_e_position(current_position[E_AXIS]);
-        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //should do nothing
-        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move xy back
-        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move z back
-        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], lastpos[E_AXIS], feedrate/60, active_extruder); //final untretract
-    }
-    break;
-    #endif //FILAMENTCHANGEENABLE
-    #ifdef DUAL_X_CARRIAGE
-    case 605: // Set dual x-carriage movement mode:
-              //    M605 S0: Full control mode. The slicer has full control over x-carriage movement
-              //    M605 S1: Auto-park mode. The inactive head will auto park/unpark without slicer involvement
-              //    M605 S2 [Xnnn] [Rmmm]: Duplication mode. The second extruder will duplicate the first with nnn
-              //                         millimeters x-offset and an optional differential hotend temperature of
-              //                         mmm degrees. E.g., with "M605 S2 X100 R2" the second extruder will duplicate
-              //                         the first with a spacing of 100mm in the x direction and 2 degrees hotter.
-              //
-              //    Note: the X axis should be homed after changing dual x-carriage mode.
-    {
-        st_synchronize();
-
-        if (code_seen('S'))
-          dual_x_carriage_mode = code_value();
-
-        if (dual_x_carriage_mode == DXC_DUPLICATION_MODE)
-        {
-          if (code_seen('X'))
-            duplicate_extruder_x_offset = max(code_value(),X2_MIN_POS - x_home_pos(0));
-
-          if (code_seen('R'))
-            duplicate_extruder_temp_offset = code_value();
-
-          SERIAL_ECHO_START;
-          SERIAL_ECHOPGM(MSG_HOTEND_OFFSET);
-          SERIAL_ECHO(" ");
-          SERIAL_ECHO(extruder_offset[X_AXIS][0]);
-          SERIAL_ECHO(",");
-          SERIAL_ECHO(extruder_offset[Y_AXIS][0]);
-          SERIAL_ECHO(" ");
-          SERIAL_ECHO(duplicate_extruder_x_offset);
-          SERIAL_ECHO(",");
-          SERIAL_ECHOLN(extruder_offset[Y_AXIS][1]);
-        }
-        else if (dual_x_carriage_mode != DXC_FULL_CONTROL_MODE && dual_x_carriage_mode != DXC_AUTO_PARK_MODE)
-        {
-          dual_x_carriage_mode = DEFAULT_DUAL_X_CARRIAGE_MODE;
-        }
-
-        active_extruder_parked = false;
-        extruder_duplication_enabled = false;
-        delayed_move_time = 0;
-    }
-    break;
-    #endif //DUAL_X_CARRIAGE
-
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
       #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
@@ -3024,6 +2819,13 @@ void process_commands()
 			  SERIAL_ECHO_START;
 			  SERIAL_ECHO("LaserRealPower: ");
 			  SERIAL_ECHOLN(laserMaxPower);
+			  break;
+		  case 10:
+			  SERIAL_ECHO_START;
+			  SERIAL_ECHOPGM(MSG_FREE_MEMORY);
+			  SERIAL_ECHO(freeMemory());
+			  SERIAL_ECHOPGM(MSG_PLANNER_BUFFER_BYTES);
+			  SERIAL_ECHOLN((int)sizeof(block_t)*BLOCK_BUFFER_SIZE);
 			  break;
 		  case 999: // Laser Emergency stop
 			  LaserControl.EmergencyStop();

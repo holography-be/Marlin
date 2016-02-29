@@ -529,6 +529,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
 #endif  //ENABLE_AUTO_BED_LEVELING
 {
   // Calculate the buffer head after we push this byte
+
   int next_buffer_head = next_block_index(block_buffer_head);
 
   // If the buffer is full: good! That means we are well ahead of the robot. 
@@ -731,6 +732,7 @@ block->steps_y = labs((target[X_AXIS]-position[X_AXIS]) - (target[Y_AXIS]-positi
   for(int i=0; i < 4; i++)
   {
     current_speed[i] = delta_mm[i] * inverse_second;
+
     if(fabs(current_speed[i]) > max_feedrate[i])
       speed_factor = min(speed_factor, max_feedrate[i] / fabs(current_speed[i]));
   }

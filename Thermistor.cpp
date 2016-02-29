@@ -7,7 +7,7 @@
 
 float ThermistorClass::getTemp(int pinNumber) {
 	// resistance at 25 degrees C
-	#define THERMISTORNOMINAL 100000      
+	#define THERMISTORNOMINAL 10000  // 10K     
 	// temp. for nominal resistance (almost always 25 C)
 	#define TEMPERATURENOMINAL 25   
 	// how many samples to take and average, more takes longer
