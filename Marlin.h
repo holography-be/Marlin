@@ -211,6 +211,11 @@ extern int extruder_multiply[EXTRUDERS]; // sets extrude multiply factor (in per
 extern float volumetric_multiplier[EXTRUDERS]; // reciprocal of cross-sectional area of filament (in square millimeters), stored this way to reduce computational burden in planner
 extern float current_position[NUM_AXIS] ;
 extern float add_homeing[3];
+
+extern float MinLaserTemp;
+extern float MaxLaserTemp;
+extern float OperationLaserTemp;
+
 #ifdef DELTA
 extern float endstop_adj[3];
 extern float delta_radius;

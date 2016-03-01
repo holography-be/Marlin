@@ -143,6 +143,7 @@
 // M207 - set retract length S[positive mm] F[feedrate mm/min] Z[additional zlift/hop], stays in mm regardless of M200 setting REMOVE
 // M208 - set recover=unretract length S[positive mm surplus to the M207 S*] F[feedrate mm/sec] REMOVE
 // M209 - S<1=true/0=false> enable automatic retract detect if the slicer did not support G10/11: every normal extrude-only move will be classified as retract depending on the direction.REMOVE
+// M210 - set temperatures for Laser L[Minimum temp] O[Operation temp] H[Maximum temp]
 // M218 - set hotend offset (in mm): T<extruder_number> X<offset_on_X> Y<offset_on_Y> REMOVE
 // M220 S<factor in percent>- set speed factor override percentage
 // M221 S<factor in percent>- set extrude factor override percentage REMOVE
@@ -205,6 +206,10 @@ float homing_feedrate[] = HOMING_FEEDRATE;
 bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
+
+float MinLaserTemp = MIN_LASER_TEMP;
+float MaxLaserTemp = MAX_LASER_TEMP;
+float OperationLaserTemp = OPERATION_LASER_TEMP;
 
 ////int extrudemultiply=100; //100->1 200->2
 ////int extruder_multiply[EXTRUDERS] = {100
@@ -278,7 +283,6 @@ int EtoPPressure=0;
   #endif
 #endif
 
-			
 
 //===========================================================================
 //=============================Private Variables=============================
@@ -525,6 +529,14 @@ void setup()
   {
     fromsd[i] = false;
   }
+
+  SERIAL_ECHO_START;
+  SERIAL_ECHOLNPGM("Laser Temperature (c°):");
+  SERIAL_ECHO_START;
+  SERIAL_ECHOPAIR("  M210 L", MinLaserTemp);
+  SERIAL_ECHOPAIR(" O", OperationLaserTemp);
+  SERIAL_ECHOPAIR(" H", MaxLaserTemp);
+  SERIAL_ECHOLN("");
 
   // loads data from EEPROM if available else uses defaults (and resets step acceleration rate)
   Config_RetrieveSettings();
@@ -2080,25 +2092,25 @@ void process_commands()
       break;
     case 114: // M114
 	  laserTemp = LaserControl.getTemp();
-      SERIAL_PROTOCOLPGM("DEST X:");
+      SERIAL_PROTOCOLPGM("D[");
       SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM(" DEST Y:");
+	  SERIAL_PROTOCOLPGM(";");
       SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM(" DEST Z:");
+	  SERIAL_PROTOCOLPGM(";");
       SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM(" DEST E:");
+	  SERIAL_PROTOCOLPGM(";");
       SERIAL_PROTOCOL(current_position[E_AXIS]);
-	  SERIAL_PROTOCOLPGM(" TL:");
-	  SERIAL_PROTOCOL(laserTemp);
-      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOLPGM("],C[");
       SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM(" CURRENT Y:");
+	  SERIAL_PROTOCOLPGM(";");
       SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM(" CURRENT Z:");
+	  SERIAL_PROTOCOLPGM(";");
       SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-	  SERIAL_PROTOCOLPGM(" CURRENT E:");
+	  SERIAL_PROTOCOLPGM(";");
 	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
-      SERIAL_PROTOCOLLN("");
+	  SERIAL_PROTOCOLPGM("],T[");
+	  SERIAL_PROTOCOL(laserTemp);
+      SERIAL_PROTOCOLLN("]");
       break;
     case 120: // M120
       enable_endstops(true) ;
