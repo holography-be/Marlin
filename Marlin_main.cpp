@@ -530,13 +530,13 @@ void setup()
     fromsd[i] = false;
   }
 
-  SERIAL_ECHO_START;
-  SERIAL_ECHOLNPGM("Laser Temperature (c°):");
-  SERIAL_ECHO_START;
-  SERIAL_ECHOPAIR("  M210 L", MinLaserTemp);
-  SERIAL_ECHOPAIR(" O", OperationLaserTemp);
-  SERIAL_ECHOPAIR(" H", MaxLaserTemp);
-  SERIAL_ECHOLN("");
+  //SERIAL_ECHO_START;
+  //SERIAL_ECHOLNPGM("Laser Temperature (c°):");
+  //SERIAL_ECHO_START;
+  //SERIAL_ECHOPAIR("  M210 L", MinLaserTemp);
+  //SERIAL_ECHOPAIR(" O", OperationLaserTemp);
+  //SERIAL_ECHOPAIR(" H", MaxLaserTemp);
+  //SERIAL_ECHOLN("");
 
   // loads data from EEPROM if available else uses defaults (and resets step acceleration rate)
   Config_RetrieveSettings();
@@ -1006,13 +1006,14 @@ static void homeaxis(int axis) {
 
     destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
     feedrate = homing_feedrate[axis];
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+	// disable LaserPower
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
     st_synchronize();
 
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
     destination[axis] = -home_retract_mm(axis) * axis_home_dir;
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder,0);
     st_synchronize();
 
     destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
@@ -1021,7 +1022,7 @@ static void homeaxis(int axis) {
 #else
     feedrate = homing_feedrate[axis]/2 ;
 #endif
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
     st_synchronize();
 
     axis_is_at_home(axis);
@@ -1111,6 +1112,19 @@ void process_commands()
               }
             }
           #endif //FWRETRACT
+	    // Add LaserPower if needed
+		if ((int)code_value() == 0) {
+			// si mouvement seulement, laser doit être coupé.
+			LaserControl.setLevel(0);
+		}
+		else {
+			if (code_seen('L')) {
+
+			}
+			else {
+
+			}
+		}
         prepare_move();
         //ClearToSend();
         return;
@@ -1118,6 +1132,13 @@ void process_commands()
       //break;
     case 2: // G2  - CW ARC
       if(Stopped == false) {
+		// Add LaserPower if needed
+		if (code_seen('L')) {
+
+		}
+		else {
+
+		}
         get_arc_coordinates();
         prepare_arc_move(true);
         return;
@@ -1125,6 +1146,13 @@ void process_commands()
     case 3: // G3  - CCW ARC
       if(Stopped == false) {
         get_arc_coordinates();
+		// Add LaserPower if needed
+		if (code_seen('L')) {
+
+		}
+		else {
+
+		}
         prepare_arc_move(false);
         return;
       }
@@ -1156,7 +1184,8 @@ void process_commands()
       plan_bed_level_matrix.set_to_identity();  //Reset the plane ("erase" all leveling data)
 #endif //ENABLE_AUTO_BED_LEVELING
 
-
+	  // Laser must be power off
+	  LaserControl.setLevel(0);
       saved_feedrate = feedrate;
       saved_feedmultiply = feedmultiply;
       feedmultiply = 100;
@@ -1199,7 +1228,7 @@ void process_commands()
         } else {
           feedrate *= sqrt(pow(max_length(X_AXIS) / max_length(Y_AXIS), 2) + 1);
         }
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
         st_synchronize();
 
         axis_is_at_home(X_AXIS);
@@ -1207,7 +1236,7 @@ void process_commands()
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         destination[X_AXIS] = current_position[X_AXIS];
         destination[Y_AXIS] = current_position[Y_AXIS];
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder ,0);
         feedrate = 0.0;
         st_synchronize();
         endstops_hit_on_purpose();
@@ -1260,7 +1289,7 @@ void process_commands()
             #if defined (Z_RAISE_BEFORE_HOMING) && (Z_RAISE_BEFORE_HOMING > 0)
               destination[Z_AXIS] = Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS) * (-1);    // Set destination away from bed
               feedrate = max_feedrate[Z_AXIS];
-              plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder);
+              plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder, 0);
               st_synchronize();
             #endif
             HOMEAXIS(Z);
@@ -1274,7 +1303,7 @@ void process_commands()
             current_position[Z_AXIS] = 0;
 
             plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-            plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder);
+            plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder, 0);
             st_synchronize();
             current_position[X_AXIS] = destination[X_AXIS];
             current_position[Y_AXIS] = destination[Y_AXIS];
@@ -1293,7 +1322,7 @@ void process_commands()
               plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
               destination[Z_AXIS] = Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS) * (-1);    // Set destination away from bed
               feedrate = max_feedrate[Z_AXIS];
-              plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder);
+              plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate, active_extruder, 0);
               st_synchronize();
 
               HOMEAXIS(Z);
@@ -3272,6 +3301,7 @@ void manage_inactivity()
         disable_e0();
         disable_e1();
         disable_e2();
+		LaserControl.setLevel(0);
       }
     }
   }

@@ -64,6 +64,7 @@ typedef struct {
   unsigned long final_rate;                          // The minimal rate at exit
   unsigned long acceleration_st;                     // acceleration steps/sec^2
   unsigned long fan_speed;
+  uint16_t LaserPower;								 // Laser Power
   #ifdef BARICUDA
   unsigned long valve_pressure;
   unsigned long e_to_p_pressure;
@@ -88,7 +89,7 @@ void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate
 // Get the position applying the bed level matrix if enabled
 vector_3 plan_get_position();
 #else
-void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, const uint8_t &extruder);
+void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, const uint8_t &extruder, uint16_t laserPower);
 #endif // ENABLE_AUTO_BED_LEVELING
 
 // Set position. Used for G92 instructions.
