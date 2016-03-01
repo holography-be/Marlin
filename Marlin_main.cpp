@@ -322,6 +322,8 @@ unsigned long stoptime=0;
 
 static uint8_t tmp_extruder;
 
+// LaserPower for commands
+uint16_t LaserLevelForCommand;
 
 bool Stopped=false;
 
@@ -1115,14 +1117,15 @@ void process_commands()
 	    // Add LaserPower if needed
 		if ((int)code_value() == 0) {
 			// si mouvement seulement, laser doit être coupé.
-			LaserControl.setLevel(0);
+			LaserLevelForCommand = 0;
 		}
 		else {
 			if (code_seen('L')) {
-
+				LaserLevelForCommand = code_value();
 			}
 			else {
-
+				// current level
+				LaserLevelForCommand = LaserControl.getLevel();
 			}
 		}
         prepare_move();
@@ -1134,10 +1137,11 @@ void process_commands()
       if(Stopped == false) {
 		// Add LaserPower if needed
 		if (code_seen('L')) {
-
+			LaserLevelForCommand = code_value();
 		}
 		else {
-
+			// current level
+			LaserLevelForCommand = LaserControl.getLevel();
 		}
         get_arc_coordinates();
         prepare_arc_move(true);
@@ -1148,10 +1152,11 @@ void process_commands()
         get_arc_coordinates();
 		// Add LaserPower if needed
 		if (code_seen('L')) {
-
+			LaserLevelForCommand = code_value();
 		}
 		else {
-
+			// current level
+			LaserLevelForCommand = LaserControl.getLevel();
 		}
         prepare_arc_move(false);
         return;
@@ -3180,10 +3185,10 @@ void prepare_move()
 
   // Do not use feedmultiply for E or Z only moves
   if( (current_position[X_AXIS] == destination [X_AXIS]) && (current_position[Y_AXIS] == destination [Y_AXIS])) {
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, LaserLevelForCommand);
   }
   else {
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0, active_extruder);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0, active_extruder, LaserLevelForCommand);
   }
 #endif //else DELTA
   for(int8_t i=0; i < NUM_AXIS; i++) {
@@ -3195,7 +3200,7 @@ void prepare_arc_move(char isclockwise) {
   float r = hypot(offset[X_AXIS], offset[Y_AXIS]); // Compute arc radius for mc_arc
 
   // Trace the arc
-  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, feedrate*feedmultiply/60/100.0, r, isclockwise, active_extruder);
+  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, feedrate*feedmultiply/60/100.0, r, isclockwise, active_extruder, LaserLevelForCommand);
 
   // As far as the parser is concerned, the position is now == target. In reality the
   // motion control system might still be processing the action and the real tool position
