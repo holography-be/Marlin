@@ -48,7 +48,7 @@ bool LaserControlClass::Stop() {
 bool LaserControlClass::EmergencyStop() {
 	if (_isON) {
 		dac.setVoltage(uint16_t(0));
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 2; i++) {
 			digitalWrite(_stopSequence[i], HIGH);
 		}
 		_isON = false;

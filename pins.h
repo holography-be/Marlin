@@ -77,9 +77,11 @@
 	#define Laser_Peltier_PIN		Relais2
 	#define Laser_Diode_PIN			Relais3
 	#define Laser_Temp_PIN			A0 // ANALOG
-	#define Laser_Start_Sequence	Laser_Driver_PIN,Laser_Peltier_PIN,Laser_Diode_PIN
-	#define Laser_Stop_Sequence		Laser_Diode_PIN,Laser_Peltier_PIN,Laser_Driver_PIN
-	#define Laser_Delai_Sequence	1500
+
+    #define Laser_Start_Sequence	 Laser_Driver_PIN,Laser_Peltier_PIN,Laser_Diode_PIN
+  	#define Laser_Stop_Sequence		 Laser_Diode_PIN,Laser_Peltier_PIN,Laser_Driver_PIN
+    #define Laser_Emergency_Sequence Laser_Diode_PIN,Laser_Driver_PIN // On laisse le Peltier 
+	#define Laser_Delai_Sequence	 1500
 
   #define PS_ON_PIN          -1
   #define KILL_PIN           -1

@@ -170,7 +170,7 @@ asm volatile ( \
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() TIMSK1 &= ~(1<<OCIE1A)
 
 
-void checkHitEndstops()
+bool checkHitEndstops()
 {
  if( endstop_x_hit || endstop_y_hit || endstop_z_hit) {
    SERIAL_ECHO_START;
@@ -191,6 +191,10 @@ void checkHitEndstops()
    endstop_x_hit=false;
    endstop_y_hit=false;
    endstop_z_hit=false;
+   // Au moins, couper le laser !
+   LaserControl.Stop();
+   SERIAL_ECHOLN("FATAL: Emergency Laser Shutdown");
+
 #if defined(ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED) && defined(SDSUPPORT)
    if (abort_on_endstop_hit)
    {
@@ -493,6 +497,8 @@ ISR(TIMER1_COMPA_vect)
     for(int8_t i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves)
 		// Check if endstop reached
 	  if (endstop_x_hit || endstop_y_hit || endstop_z_hit) break;
+	  // Set Laser Power
+	  LaserControl.setLevel(current_block->LaserPower);
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
       #endif

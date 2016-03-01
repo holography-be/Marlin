@@ -580,8 +580,18 @@ void loop()
   }
   //check heater every n milliseconds
   //manage_heater();
+
+  // Check Laser Temp
+  if (LaserControl.getTemp() > MaxLaserTemp) {
+	  SERIAL_ERROR_START;
+	  SERIAL_ERRORPGM("Temp Laser Too high : ");
+	  SERIAL_ERROR(LaserControl.getTemp());
+	  // no time to waste
+	  LaserControl.EmergencyStop();
+	  kill();
+  }
   manage_inactivity();
-  checkHitEndstops();
+  if (checkHitEndstops()) kill();
   //lcd_update();
 }
 
@@ -3304,9 +3314,7 @@ void manage_inactivity()
         disable_y();
         disable_z();
         disable_e0();
-        disable_e1();
-        disable_e2();
-		LaserControl.setLevel(0);
+		//LaserControl.setLevel(0);
       }
     }
   }
@@ -3371,8 +3379,7 @@ void kill()
   disable_y();
   disable_z();
   disable_e0();
-  disable_e1();
-  disable_e2();
+  LaserControl.EmergencyStop();
 
 #if defined(PS_ON_PIN) && PS_ON_PIN > -1
   pinMode(PS_ON_PIN,INPUT);
