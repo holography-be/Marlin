@@ -61,42 +61,11 @@ void Config_StoreSettings()
   EEPROM_WRITE_VAR(i,max_z_jerk);
   EEPROM_WRITE_VAR(i,max_e_jerk);
   EEPROM_WRITE_VAR(i,add_homeing);
-  ////#ifdef DELTA
-  ////EEPROM_WRITE_VAR(i,endstop_adj);
-  ////EEPROM_WRITE_VAR(i,delta_radius);
-  ////EEPROM_WRITE_VAR(i,delta_diagonal_rod);
-  ////EEPROM_WRITE_VAR(i,delta_segments_per_second);
-  ////#endif
-  ////#ifndef ULTIPANEL
-  ////int plaPreheatHotendTemp = PLA_PREHEAT_HOTEND_TEMP, plaPreheatHPBTemp = PLA_PREHEAT_HPB_TEMP, plaPreheatFanSpeed = PLA_PREHEAT_FAN_SPEED;
-  ////int absPreheatHotendTemp = ABS_PREHEAT_HOTEND_TEMP, absPreheatHPBTemp = ABS_PREHEAT_HPB_TEMP, absPreheatFanSpeed = ABS_PREHEAT_FAN_SPEED;
-  ////#endif
-  ////EEPROM_WRITE_VAR(i,plaPreheatHotendTemp);
-  ////EEPROM_WRITE_VAR(i,plaPreheatHPBTemp);
-  ////EEPROM_WRITE_VAR(i,plaPreheatFanSpeed);
-  ////EEPROM_WRITE_VAR(i,absPreheatHotendTemp);
-  ////EEPROM_WRITE_VAR(i,absPreheatHPBTemp);
-  ////EEPROM_WRITE_VAR(i,absPreheatFanSpeed);
   EEPROM_WRITE_VAR(i,zprobe_zoffset);
   // Laser Temp
   EEPROM_WRITE_VAR(i, MinLaserTemp);
   EEPROM_WRITE_VAR(i, OperationLaserTemp);
   EEPROM_WRITE_VAR(i, MaxLaserTemp);
-  ////#ifdef PIDTEMP
-  ////  EEPROM_WRITE_VAR(i,Kp);
-  ////  EEPROM_WRITE_VAR(i,Ki);
-  ////  EEPROM_WRITE_VAR(i,Kd);
-  ////#else
-		////float dummy = 3000.0f;
-  ////  EEPROM_WRITE_VAR(i,dummy);
-		////dummy = 0.0f;
-  ////  EEPROM_WRITE_VAR(i,dummy);
-  ////  EEPROM_WRITE_VAR(i,dummy);
-  ////#endif
-  ////#ifndef DOGLCD
-  ////  int lcd_contrast = 32;
-  ////#endif
-  ////EEPROM_WRITE_VAR(i,lcd_contrast);
   char ver2[4]=EEPROM_VERSION;
   i=EEPROM_OFFSET;
   EEPROM_WRITE_VAR(i,ver2); // validate data
@@ -166,32 +135,6 @@ void Config_PrintSettings()
 	SERIAL_PROTOCOLLN("");
 	SERIAL_PROTOCOLLN("END_EEPROM");
 
-
-////#ifdef DELTA
-////    SERIAL_ECHO_START;
-////    SERIAL_ECHOLNPGM("Endstop adjustement (mm):");
-////    SERIAL_ECHO_START;
-////    SERIAL_ECHOPAIR("  M666 X",endstop_adj[0] );
-////    SERIAL_ECHOPAIR(" Y" ,endstop_adj[1] );
-////    SERIAL_ECHOPAIR(" Z" ,endstop_adj[2] );
-////	SERIAL_ECHOLN("");
-////	SERIAL_ECHO_START;
-////	SERIAL_ECHOLNPGM("Delta settings: L=delta_diagonal_rod, R=delta_radius, S=delta_segments_per_second");
-////	SERIAL_ECHO_START;
-////	SERIAL_ECHOPAIR("  M665 L",delta_diagonal_rod );
-////	SERIAL_ECHOPAIR(" R" ,delta_radius );
-////	SERIAL_ECHOPAIR(" S" ,delta_segments_per_second );
-////	SERIAL_ECHOLN("");
-////#endif
-////#ifdef PIDTEMP
-////    SERIAL_ECHO_START;
-////    SERIAL_ECHOLNPGM("PID settings:");
-////    SERIAL_ECHO_START;
-////    SERIAL_ECHOPAIR("   M301 P",Kp); 
-////    SERIAL_ECHOPAIR(" I" ,unscalePID_i(Ki)); 
-////    SERIAL_ECHOPAIR(" D" ,unscalePID_d(Kd));
-////    SERIAL_ECHOLN(""); 
-////#endif
 } 
 #endif
 
@@ -223,41 +166,11 @@ void Config_RetrieveSettings()
         EEPROM_READ_VAR(i,max_z_jerk);
         EEPROM_READ_VAR(i,max_e_jerk);
         EEPROM_READ_VAR(i,add_homeing);
-  ////      #ifdef DELTA
-		////EEPROM_READ_VAR(i,endstop_adj);
-		////EEPROM_READ_VAR(i,delta_radius);
-		////EEPROM_READ_VAR(i,delta_diagonal_rod);
-		////EEPROM_READ_VAR(i,delta_segments_per_second);
-  ////      #endif
-        ////#ifndef ULTIPANEL
-        ////int plaPreheatHotendTemp, plaPreheatHPBTemp, plaPreheatFanSpeed;
-        ////int absPreheatHotendTemp, absPreheatHPBTemp, absPreheatFanSpeed;
-        ////#endif
-        ////EEPROM_READ_VAR(i,plaPreheatHotendTemp);
-        ////EEPROM_READ_VAR(i,plaPreheatHPBTemp);
-        ////EEPROM_READ_VAR(i,plaPreheatFanSpeed);
-        ////EEPROM_READ_VAR(i,absPreheatHotendTemp);
-        ////EEPROM_READ_VAR(i,absPreheatHPBTemp);
-        ////EEPROM_READ_VAR(i,absPreheatFanSpeed);
         EEPROM_READ_VAR(i,zprobe_zoffset);
 		// Laser Temp
 		EEPROM_READ_VAR(i, MinLaserTemp);
 		EEPROM_READ_VAR(i, OperationLaserTemp);
 		EEPROM_READ_VAR(i, MaxLaserTemp);
-        ////#ifndef PIDTEMP
-        ////float Kp,Ki,Kd;
-        ////#endif
-        // do not need to scale PID values as the values in EEPROM are already scaled		
-        ////EEPROM_READ_VAR(i,Kp);
-        ////EEPROM_READ_VAR(i,Ki);
-        ////EEPROM_READ_VAR(i,Kd);
-        ////#ifndef DOGLCD
-        ////int lcd_contrast;
-        ////#endif
-        ////EEPROM_READ_VAR(i,lcd_contrast);
-
-		// Call updatePID (similar to when we have processed M301)
-		////updatePID();
         SERIAL_ECHO_START;
         SERIAL_ECHOLNPGM("Stored settings retrieved");
     }
@@ -300,39 +213,9 @@ void Config_ResetDefault()
 	OperationLaserTemp = OPERATION_LASER_TEMP;
 	MaxLaserTemp = MAX_LASER_TEMP;
 
-////#ifdef DELTA
-////	endstop_adj[0] = endstop_adj[1] = endstop_adj[2] = 0;
-////	delta_radius= DELTA_RADIUS;
-////	delta_diagonal_rod= DELTA_DIAGONAL_ROD;
-////	delta_segments_per_second= DELTA_SEGMENTS_PER_SECOND;
-////	recalc_delta_settings(delta_radius, delta_diagonal_rod);
-////#endif
-////#ifdef ULTIPANEL
-////    plaPreheatHotendTemp = PLA_PREHEAT_HOTEND_TEMP;
-////    plaPreheatHPBTemp = PLA_PREHEAT_HPB_TEMP;
-////    plaPreheatFanSpeed = PLA_PREHEAT_FAN_SPEED;
-////    absPreheatHotendTemp = ABS_PREHEAT_HOTEND_TEMP;
-////    absPreheatHPBTemp = ABS_PREHEAT_HPB_TEMP;
-////    absPreheatFanSpeed = ABS_PREHEAT_FAN_SPEED;
-////#endif
 #ifdef ENABLE_AUTO_BED_LEVELING
     zprobe_zoffset = -Z_PROBE_OFFSET_FROM_EXTRUDER;
 #endif
-////#ifdef DOGLCD
-////    lcd_contrast = DEFAULT_LCD_CONTRAST;
-////#endif
-////#ifdef PIDTEMP
-////    Kp = DEFAULT_Kp;
-////    Ki = scalePID_i(DEFAULT_Ki);
-////    Kd = scalePID_d(DEFAULT_Kd);
-////    
-////    // call updatePID (similar to when we have processed M301)
-////    updatePID();
-////    
-////#ifdef PID_ADD_EXTRUSION_RATE
-////    Kc = DEFAULT_Kc;
-////#endif//PID_ADD_EXTRUSION_RATE
-////#endif//PIDTEMP
 
 SERIAL_ECHO_START;
 SERIAL_ECHOLNPGM("Hardcoded Default Settings Loaded");

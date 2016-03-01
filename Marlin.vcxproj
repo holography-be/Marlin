@@ -77,12 +77,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Adafruit_MCP4725.h" />
-    <ClInclude Include="BlinkM.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="cardreader.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="Configuration.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -93,15 +87,6 @@
       <FileType>CppCode</FileType>
     </ClInclude>
     <ClInclude Include="DAC.h" />
-    <ClInclude Include="DOGMbitmaps.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="dogm_font_data_marlin.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="dogm_lcd_implementation.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="fastio.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -109,9 +94,6 @@
       <FileType>CppCode</FileType>
     </ClInclude>
     <ClInclude Include="LaserControl.h" />
-    <ClInclude Include="LiquidCrystalRus.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="Marlin.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -127,39 +109,6 @@
     <ClInclude Include="planner.h">
       <FileType>CppCode</FileType>
     </ClInclude>
-    <ClInclude Include="qr_solve.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="Sd2Card.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="Sd2PinMap.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdBaseFile.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdFatConfig.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdFatStructs.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdFatUtil.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdFile.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdInfo.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="SdVolume.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="Servo.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="speed_lookuptable.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -168,18 +117,6 @@
     </ClInclude>
     <ClInclude Include="Thermistor.h" />
     <ClInclude Include="Tones.h" />
-    <ClInclude Include="ultralcd.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="ultralcd_implementation_hitachi_HD44780.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="ultralcd_st7920_u8glib_rrd.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="vector_3.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="watchdog.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -187,28 +124,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Adafruit_MCP4725.cpp" />
-    <ClCompile Include="BlinkM.cpp" />
-    <ClCompile Include="cardreader.cpp" />
     <ClCompile Include="ConfigurationStore.cpp" />
     <ClCompile Include="DAC.cpp" />
-    <ClCompile Include="digipot_mcp4451.cpp" />
     <ClCompile Include="LaserControl.cpp" />
-    <ClCompile Include="LiquidCrystalRus.cpp" />
     <ClCompile Include="MarlinSerial.cpp" />
     <ClCompile Include="Marlin_main.cpp" />
     <ClCompile Include="motion_control.cpp" />
     <ClCompile Include="planner.cpp" />
-    <ClCompile Include="qr_solve.cpp" />
-    <ClCompile Include="Sd2Card.cpp" />
-    <ClCompile Include="SdBaseFile.cpp" />
-    <ClCompile Include="SdFatUtil.cpp" />
-    <ClCompile Include="SdFile.cpp" />
-    <ClCompile Include="SdVolume.cpp" />
-    <ClCompile Include="Servo.cpp" />
     <ClCompile Include="stepper.cpp" />
     <ClCompile Include="Thermistor.cpp" />
-    <ClCompile Include="ultralcd.cpp" />
-    <ClCompile Include="vector_3.cpp" />
     <ClCompile Include="watchdog.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
