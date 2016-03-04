@@ -87,7 +87,10 @@ static bool check_endstops = true;
 volatile long count_position[NUM_AXIS] = { 0, 0, 0, 0};
 volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 
-float currentX_Position;
+// pour pixelSegment
+int * powerLevelForCurrentPixel;  // pointeur dans pixelSegment
+float current_X_Position;
+float next_X_Position;  // si la position courante atteind cette valeur, c'est un nouveau pixel;
 
 //===========================================================================
 //=============================functions         ============================
@@ -505,7 +508,13 @@ ISR(TIMER1_COMPA_vect)
 	  counter_x += current_block->steps_x;
 	  if (counter_x > 0) {
 		WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
+		//
 		// TO DO : Get LaserLevel (pixel) in pixelSegment for this position
+		//
+		if (current_block->pixelSegment != NULL) {  // si déplacement G5
+			current_X_Position = count_position[X_AXIS] / axis_steps_per_unit[X_AXIS];
+			//current_block->pixelSize;
+		}
 		counter_x -= current_block->step_event_count;
 		count_position[X_AXIS]+=count_direction[X_AXIS];   
 		WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
@@ -559,16 +568,6 @@ ISR(TIMER1_COMPA_vect)
       timer = calc_timer(acc_step_rate);
       OCR1A = timer;
       acceleration_time += timer;
-      #ifdef ADVANCE
-        for(int8_t i=0; i < step_loops; i++) {
-          advance += advance_rate;
-        }
-        //if(advance > current_block->advance) advance = current_block->advance;
-        // Do E steps + advance steps
-        e_steps[current_block->active_extruder] += ((advance >>8) - old_advance);
-        old_advance = advance >>8;
-
-      #endif
     } else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {
       MultiU24X24toH16(step_rate, deceleration_time, current_block->acceleration_rate);
 
@@ -587,15 +586,6 @@ ISR(TIMER1_COMPA_vect)
       timer = calc_timer(step_rate);
       OCR1A = timer;
       deceleration_time += timer;
-      #ifdef ADVANCE
-        for(int8_t i=0; i < step_loops; i++) {
-          advance -= advance_rate;
-        }
-        if(advance < final_advance) advance = final_advance;
-        // Do E steps + advance steps
-        e_steps[current_block->active_extruder] += ((advance >>8) - old_advance);
-        old_advance = advance >>8;
-      #endif //ADVANCE
     } else {
       OCR1A = OCR1A_nominal;
       // ensure we're running at the correct step rate, even if we just came off an acceleration
@@ -767,18 +757,8 @@ void st_init()
     WRITE(E0_STEP_PIN,INVERT_E_STEP_PIN);
     disable_e0();
   #endif
-  ////#if defined(E1_STEP_PIN) && (E1_STEP_PIN > -1)
-  ////  SET_OUTPUT(E1_STEP_PIN);
-  ////  WRITE(E1_STEP_PIN,INVERT_E_STEP_PIN);
-  ////  disable_e1();
-  ////#endif
-  ////#if defined(E2_STEP_PIN) && (E2_STEP_PIN > -1)
-  ////  SET_OUTPUT(E2_STEP_PIN);
-  ////  WRITE(E2_STEP_PIN,INVERT_E_STEP_PIN);
-  ////  disable_e2();
-  ////#endif
 
-  // waveform generation = 0100 = CTC
+	// waveform generation = 0100 = CTC
   TCCR1B &= ~(1<<WGM13);
   TCCR1B |=  (1<<WGM12);
   TCCR1A &= ~(1<<WGM11);
