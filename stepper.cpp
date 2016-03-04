@@ -87,6 +87,8 @@ static bool check_endstops = true;
 volatile long count_position[NUM_AXIS] = { 0, 0, 0, 0};
 volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 
+float currentX_Position;
+
 //===========================================================================
 //=============================functions         ============================
 //===========================================================================
@@ -499,13 +501,11 @@ ISR(TIMER1_COMPA_vect)
 	  // Set Laser Power
 	  analogWrite(3, current_block->LaserPower);
 	  //LaserControl.setLevel(current_block->LaserPower);
-      #ifndef AT90USB
-      MSerial.checkRx(); // Check for serial chars.
-      #endif
 
 	  counter_x += current_block->steps_x;
 	  if (counter_x > 0) {
 		WRITE(X_STEP_PIN, !INVERT_X_STEP_PIN);
+		// TO DO : Get LaserLevel (pixel) in pixelSegment for this position
 		counter_x -= current_block->step_event_count;
 		count_position[X_AXIS]+=count_direction[X_AXIS];   
 		WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);

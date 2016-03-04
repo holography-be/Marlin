@@ -59,6 +59,8 @@ typedef struct {
   unsigned long fan_speed;
   uint16_t LaserPower;								 // Laser Power
   volatile char busy;
+  char * pixelSegment;								 // Pointeur vers Pixels
+  float pixelSize;									 // Taille d'un pixel
 } block_t;
 
 #ifdef ENABLE_AUTO_BED_LEVELING
@@ -72,25 +74,12 @@ void plan_init();
 // Add a new linear movement to the buffer. x, y and z is the signed, absolute target position in 
 // millimaters. Feed rate specifies the speed of the motion.
 
-#ifdef ENABLE_AUTO_BED_LEVELING
-void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate, const uint8_t &extruder);
-
-// Get the position applying the bed level matrix if enabled
-vector_3 plan_get_position();
-#else
-void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, uint16_t laserPower);
-#endif // ENABLE_AUTO_BED_LEVELING
+void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, uint16_t laserPower, char * pixelSegment, float pixelSize);
 
 // Set position. Used for G92 instructions.
-#ifdef ENABLE_AUTO_BED_LEVELING
-void plan_set_position(float x, float y, float z, const float &e);
-#else
 void plan_set_position(const float &x, const float &y, const float &z, const float &e);
-#endif // ENABLE_AUTO_BED_LEVELING
 
 void plan_set_e_position(const float &e);
-
-
 
 void check_axes_activity();
 uint8_t movesplanned(); //return the nr of buffered moves

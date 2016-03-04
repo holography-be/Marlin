@@ -439,7 +439,7 @@ float junction_deviation = 0.1;
 // Add a new linear movement to the buffer. steps_x, _y and _z is the absolute position in 
 // mm. Microseconds specify how many microseconds the move should take to perform. To aid acceleration
 // calculation the caller must also provide the physical length of the line in millimeters.
-void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, uint16_t laserPower)
+void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, uint16_t laserPower, char * pixelSegment, float pixelSize)
 {
   // Calculate the buffer head after we push this byte
 
@@ -490,6 +490,18 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   
   // Add Laser Power
   block->LaserPower = laserPower;
+  // Add pixelSegment
+  block->pixelSegment = pixelSegment;
+  if (DEBUG) {
+	  int tempByte;
+	  char *temp = pixelSegment;
+	  MYSERIAL.print("buffer: ");
+	  while (*temp != '\0') {
+		  MYSERIAL.print(*temp++);
+	  }
+	  MYSERIAL.println();
+  }
+  block->pixelSize = pixelSize;
 
   // Compute direction bits for this block 
   block->direction_bits = 0;

@@ -212,7 +212,7 @@ uint16_t laserMaxPower;
 uint8_t active_extruder = 0;
 int fanSpeed=0;
 
-char PixelSegment[350];
+
 
 
 //===========================================================================
@@ -237,7 +237,8 @@ static char serial_char;
 static int serial_count = 0;
 static boolean comment_mode = false;
 static char *strchr_pointer; // just a pointer to find chars in the command string like X, Y, Z, E, etc
-
+static char *pixelSegment; // pointeur vers pixelSegment
+static float pixelSize; // taille d'un pixel.
 const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
 
 //static float tt = 0;
@@ -512,60 +513,61 @@ void loop()
 
 
 bool myCode_seen(char code) {
-	strchr_pointer = strchr(PixelSegment, code);
-	return (strchr_pointer != NULL);  //Return True if a character was found
+	pixelSegment = strchr(cmdbuffer[bufindr], code);
+	return (pixelSegment != NULL);  //Return True if a character was found
 }
 
-float myCode_value() {
-	return (strtod(strchr_pointer, NULL));
-}
+//////////
+//////////float myCode_value() {
+//////////	return (strtod(strchr_pointer, NULL));
+//////////}
 
-void receive_PixelSegment() {
-	uint16_t bufIndex = 0;
-	// empty PixelBuffer
-	for (bufIndex = 0; bufIndex < 550; bufIndex++) {
-		PixelSegment[bufIndex] = 'X';
-	}
-	PixelSegment[0] = 'A';
-	bufIndex = 1;	
-	while (1) {
-		if (MYSERIAL.available() > 0) {
-			serial_char = MYSERIAL.read();
-			MYSERIAL.print(bufIndex);
-			MYSERIAL.print(" :");
-			MYSERIAL.print(serial_char);
-			PixelSegment[bufIndex++] = serial_char;
-			// dernier caractère
-			if (bufIndex >= 550) break;
-		}
-	}
-
-	// get params
-	// identique à G1 pour préparation déplacement
-	//////////bool seen[4] = { false, false, false, false };
-	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
-	//////////	if (myCode_seen(axis_codes[i]))
-	//////////	{
-	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-	//////////		seen[i] = true;
-	//////////	}
-	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
-	//////////}
-	//////////if (myCode_seen('F')) {
-	//////////	next_feedrate = myCode_value();
-	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
-	//////////}
-	//////////// on prepare le segment mais attention, c'est synchrone
-	//////////prepare_move();
-
- //////////   // return packet
-	//////////MYSERIAL.println("");
-	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
-	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
-	//////////}	
-	//////////MYSERIAL.println("");
-
-}
+//void receive_PixelSegment() {
+//	//////////uint16_t bufIndex = 0;
+//	//////////// empty PixelBuffer
+//	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+//	//////////	PixelSegment[bufIndex] = 'X';
+//	//////////}
+//	//////////PixelSegment[0] = 'A';
+//	//////////bufIndex = 1;	
+//	//////////while (1) {
+//	//////////	if (MYSERIAL.available() > 0) {
+//	//////////		serial_char = MYSERIAL.read();
+//	//////////		MYSERIAL.print(bufIndex);
+//	//////////		MYSERIAL.print(" :");
+//	//////////		MYSERIAL.print(serial_char);
+//	//////////		PixelSegment[bufIndex++] = serial_char;
+//	//////////		// dernier caractère
+//	//////////		if (bufIndex >= 550) break;
+//	//////////	}
+//	//////////}
+//
+//	// get params
+//	// identique à G1 pour préparation déplacement
+//	//////////bool seen[4] = { false, false, false, false };
+//	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
+//	//////////	if (myCode_seen(axis_codes[i]))
+//	//////////	{
+//	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
+//	//////////		seen[i] = true;
+//	//////////	}
+//	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
+//	//////////}
+//	//////////if (myCode_seen('F')) {
+//	//////////	next_feedrate = myCode_value();
+//	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
+//	//////////}
+//	//////////// on prepare le segment mais attention, c'est synchrone
+//	//////////prepare_move();
+//
+// //////////   // return packet
+//	//////////MYSERIAL.println("");
+//	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+//	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
+//	//////////}	
+//	//////////MYSERIAL.println("");
+//
+//}
 
 void get_command()
 {
@@ -736,39 +738,21 @@ static void homeaxis(int axis) {
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
 
-
-    // Engage Servo endstop if enabled
-    #ifdef SERVO_ENDSTOPS
-      #if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
-        if (axis==Z_AXIS) {
-          engage_z_probe();
-        }
-	    else
-      #endif
-      if (servo_endstops[axis] > -1) {
-        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2]);
-      }
-    #endif
-
     destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
     feedrate = homing_feedrate[axis];
 	// disable LaserPower
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
+	plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate / 60, 0, NULL, 0.0);
     st_synchronize();
 
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
     destination[axis] = -home_retract_mm(axis) * axis_home_dir;
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0, NULL, 0);
     st_synchronize();
 
     destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
-#ifdef DELTA
-    feedrate = homing_feedrate[axis]/10;
-#else
     feedrate = homing_feedrate[axis]/2 ;
-#endif
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0, NULL, 0);
     st_synchronize();
 
     axis_is_at_home(axis);
@@ -776,16 +760,6 @@ static void homeaxis(int axis) {
     feedrate = 0.0;
     endstops_hit_on_purpose();
     axis_known_position[axis] = true;
-
-    // Retract Servo endstop if enabled
-    #ifdef SERVO_ENDSTOPS
-      if (servo_endstops[axis] > -1) {
-        servos[servo_endstops[axis]].write(servo_endstop_angles[axis * 2 + 1]);
-      }
-    #endif
-#if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
-    if (axis==Z_AXIS) retract_z_probe();
-#endif
 
   }
 }
@@ -800,11 +774,10 @@ void process_commands()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
-#ifdef ENABLE_AUTO_BED_LEVELING
-  float x_tmp, y_tmp, z_tmp, real_z;
-#endif
   if(code_seen('G'))
   {
+	pixelSegment = NULL;
+	pixelSize = 0;
     switch((int)code_value())
     {
     case 0: // G0 -> G1
@@ -874,11 +847,48 @@ void process_commands()
       }
       break;
 	case 5: // nouveau gcode pour Pixel Segment.		
+		if (DEBUG) MYSERIAL.println("Prepare G5");
 		if (Stopped == false) {
 			get_coordinates(); // For X Y Z E F
-			prepare_move();
+			if (code_seen('S')) {
+				pixelSize = code_value();
+			}
+			else {
+				MYSERIAL.println("No size found.");
+			}
+			if (myCode_seen('P') != NULL) {
+				if (DEBUG) MYSERIAL.println(uint16_t(pixelSegment), HEX);
+				// Convert HEXString to Int in the buffer
+				pixelSegment++; // car pixelSegment pointe vers 'P' dans la commande
+				char tempByte;
+				char *ptr = pixelSegment;
+				char *dest = pixelSegment;
+				while (*ptr != '\0') {
+					if (*ptr > '9') {
+						tempByte = (*ptr - 55) * 16;
+					}
+					else {
+						tempByte = (*ptr - 48) * 16;
+					}
+					ptr++;
+					if (*ptr > '9') {
+						tempByte += (*ptr - 55);
+					}
+					else {
+						tempByte += (*ptr - 48);
+					}
+					*dest++ = tempByte;
+					ptr++;					
+				}
+				*dest = '\0';
+				prepare_move();
+			}
+			else {
+				MYSERIAL.println("No pixels found.");
+			}
 			//ClearToSend();
 			return;
+		}
     case 28: //G28 Home all Axis one at a time
 	  // Laser must be power off
 	  LaserControl.setLevel(0);
@@ -921,7 +931,7 @@ void process_commands()
         } else {
           feedrate *= sqrt(pow(max_length(X_AXIS) / max_length(Y_AXIS), 2) + 1);
         }
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0, NULL, 0);
         st_synchronize();
 
         axis_is_at_home(X_AXIS);
@@ -929,7 +939,7 @@ void process_commands()
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         destination[X_AXIS] = current_position[X_AXIS];
         destination[Y_AXIS] = current_position[Y_AXIS];
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0, NULL, 0);
         feedrate = 0.0;
         st_synchronize();
         endstops_hit_on_purpose();
@@ -1632,10 +1642,10 @@ void prepare_move()
   previous_millis_cmd = millis();
   // Do not use feedmultiply for E or Z only moves
   if( (current_position[X_AXIS] == destination [X_AXIS]) && (current_position[Y_AXIS] == destination [Y_AXIS])) {
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60,  LaserLevelForCommand);
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60,  LaserLevelForCommand, pixelSegment, pixelSize);
   }
   else {
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0,  LaserLevelForCommand);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0,  LaserLevelForCommand, pixelSegment, pixelSize);
   }
   for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
@@ -1728,35 +1738,7 @@ void manage_inactivity()
   #if defined(CONTROLLERFAN_PIN) && CONTROLLERFAN_PIN > -1
     controllerFan(); //Check if fan should be turned on to cool stepper drivers down
   #endif
-  #ifdef EXTRUDER_RUNOUT_PREVENT
-    if( (millis() - previous_millis_cmd) >  EXTRUDER_RUNOUT_SECONDS*1000 )
-    if(degHotend(active_extruder)>EXTRUDER_RUNOUT_MINTEMP)
-    {
-     bool oldstatus=READ(E0_ENABLE_PIN);
-     enable_e0();
-     float oldepos=current_position[E_AXIS];
-     float oldedes=destination[E_AXIS];
-     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS],
-                      destination[E_AXIS]+EXTRUDER_RUNOUT_EXTRUDE*EXTRUDER_RUNOUT_ESTEPS/axis_steps_per_unit[E_AXIS],
-                      EXTRUDER_RUNOUT_SPEED/60.*EXTRUDER_RUNOUT_ESTEPS/axis_steps_per_unit[E_AXIS], active_extruder);
-     current_position[E_AXIS]=oldepos;
-     destination[E_AXIS]=oldedes;
-     plan_set_e_position(oldepos);
-     previous_millis_cmd=millis();
-     st_synchronize();
-     WRITE(E0_ENABLE_PIN,oldstatus);
-    }
-  #endif
-  #if defined(DUAL_X_CARRIAGE)
-    // handle delayed move timeout
-    if (delayed_move_time != 0 && (millis() - delayed_move_time) > 1000 && Stopped == false)
-    {
-      // travel moves have been received so enact them
-      delayed_move_time = 0xFFFFFFFFUL; // force moves to be done
-      memcpy(destination,current_position,sizeof(destination));
-      prepare_move();
-    }
-  #endif
+
   #ifdef TEMP_STAT_LEDS
       handle_status_leds();
   #endif
