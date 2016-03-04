@@ -16,9 +16,9 @@ class LaserControlClass
 {
  protected:
 	DAC dac;
-	const uint16_t _startSequence[3] = { Laser_Start_Sequence };
-	const uint16_t _stopSequence[3] = { Laser_Stop_Sequence };
-	const uint16_t _delai = Laser_Delai_Sequence;
+	const uint8_t _startSequence[3] = { Laser_Start_Sequence };
+	const uint8_t _stopSequence[3] = { Laser_Stop_Sequence };
+	const uint8_t _delai = Laser_Delai_Sequence;
  public:
 	void init();
 	//DAC getDac();
@@ -26,13 +26,13 @@ class LaserControlClass
 	bool Stop();
 	bool EmergencyStop();
 	bool isON();
-	void setMaxPower(uint16_t value);
-	uint16_t getMaxPower();
-	uint16_t getRealPower();
-	void setLevel(uint16_t value);
-	void setPower(uint16_t value);
-	uint16_t getLevel();
-	uint16_t getPower();
+	void setMaxPower(uint8_t value);
+	uint8_t getMaxPower();
+	uint8_t getRealPower();
+	void setLevel(uint8_t value);
+	void setPower(uint8_t value);
+	uint8_t getLevel();
+	uint8_t getPower();
 	float getTemp();
 };
 

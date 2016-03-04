@@ -403,10 +403,6 @@ void check_axes_activity()
   unsigned char z_active = 0;
   unsigned char e_active = 0;
   unsigned char tail_fan_speed = fanSpeed;
-  #ifdef BARICUDA
-  unsigned char tail_valve_pressure = ValvePressure;
-  unsigned char tail_e_to_p_pressure = EtoPPressure;
-  #endif
   block_t *block;
 
   if(block_buffer_tail != block_buffer_head)
@@ -430,10 +426,8 @@ void check_axes_activity()
   if((DISABLE_X) && (x_active == 0)) disable_x();
   if((DISABLE_Y) && (y_active == 0)) disable_y();
   if((DISABLE_Z) && (z_active == 0)) disable_z();
-  if((DISABLE_E) && (e_active == 0))
-  {
-    disable_e0();
-  }
+  if((DISABLE_E) && (e_active == 0)) disable_e0();
+ 
 #if defined(FAN_PIN) && FAN_PIN > -1
   analogWrite(FAN_PIN,tail_fan_speed);
 #endif//FAN_PIN > -1
@@ -445,11 +439,7 @@ float junction_deviation = 0.1;
 // Add a new linear movement to the buffer. steps_x, _y and _z is the absolute position in 
 // mm. Microseconds specify how many microseconds the move should take to perform. To aid acceleration
 // calculation the caller must also provide the physical length of the line in millimeters.
-#ifdef ENABLE_AUTO_BED_LEVELING
-void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate, const uint8_t &extruder, uint16_t laserPower)
-#else
-void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, const uint8_t &extruder, uint16_t laserPower)
-#endif  //ENABLE_AUTO_BED_LEVELING
+void plan_buffer_line(const float &x, const float &y, const float &z, const float &e, float feed_rate, uint16_t laserPower)
 {
   // Calculate the buffer head after we push this byte
 
@@ -522,8 +512,6 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
     block->direction_bits |= (1<<E_AXIS); 
   }
 
-  block->active_extruder = extruder;
-
   //enable active axes
   if(block->steps_x != 0) enable_x();
   if(block->steps_y != 0) enable_y();
@@ -546,8 +534,8 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
 
   float delta_mm[4];
 
-    delta_mm[X_AXIS] = (target[X_AXIS]-position[X_AXIS])/axis_steps_per_unit[X_AXIS];
-    delta_mm[Y_AXIS] = (target[Y_AXIS]-position[Y_AXIS])/axis_steps_per_unit[Y_AXIS];
+  delta_mm[X_AXIS] = (target[X_AXIS]-position[X_AXIS])/axis_steps_per_unit[X_AXIS];
+  delta_mm[Y_AXIS] = (target[Y_AXIS]-position[Y_AXIS])/axis_steps_per_unit[Y_AXIS];
   delta_mm[Z_AXIS] = (target[Z_AXIS]-position[Z_AXIS])/axis_steps_per_unit[Z_AXIS];
   if ( block->steps_x <=dropsegments && block->steps_y <=dropsegments && block->steps_z <=dropsegments )
   {

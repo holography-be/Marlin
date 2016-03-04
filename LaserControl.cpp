@@ -11,18 +11,20 @@ void LaserControlClass::init()
 {
 
 	dac.init(DAC_I2C_ADRESS, 100);
-	dac.setVoltage(uint16_t(0));
+	dac.setVoltage(uint8_t(0));
 	for (int i = 0; i < 3; i++) {
 		pinMode(_startSequence[i],OUTPUT);
 		digitalWrite(_startSequence[i],HIGH);
 	}
 	digitalWrite(ModuleRelaisPower, HIGH);
+	pinMode(2, OUTPUT);
+	analogWrite(3,0);
 }
 
 bool LaserControlClass::Start() {
 	if (!_isON) {
 		// sortie driver à zéro
-		dac.setPower(uint16_t(0));
+		dac.setPower(uint8_t(0));
 		for (int i = 0; i < 3; i++) {
 			digitalWrite(_startSequence[i], LOW);
 			delay(Laser_Delai_Sequence);
@@ -35,7 +37,7 @@ bool LaserControlClass::Start() {
 
 bool LaserControlClass::Stop() {
 	if (_isON) {
-		dac.setPower(uint16_t(0));
+		dac.setPower(uint8_t(0));
 		for (int i = 0; i < 3; i++) {
 			digitalWrite(_stopSequence[i],HIGH);
 			delay(Laser_Delai_Sequence);
@@ -47,7 +49,7 @@ bool LaserControlClass::Stop() {
 
 bool LaserControlClass::EmergencyStop() {
 	if (_isON) {
-		dac.setVoltage(uint16_t(0));
+		dac.setVoltage(uint8_t(0));
 		for (int i = 0; i < 2; i++) {
 			digitalWrite(_stopSequence[i], HIGH);
 		}
@@ -56,39 +58,40 @@ bool LaserControlClass::EmergencyStop() {
 	return true;
 }
 
-void LaserControlClass::setPower(uint16_t value) {
+void LaserControlClass::setPower(uint8_t value) {
 	if (!_isON) return;
 	if (value == dac.getPower()) return;
 	dac.setPower(value);
 	return;
 }
 
-void LaserControlClass::setMaxPower(uint16_t value) {
+void LaserControlClass::setMaxPower(uint8_t value) {
 	if (value < 100 && value > 0) {
 		dac.setMaxPower(value);
 	}
 }
 
-uint16_t LaserControlClass::getRealPower() {
+uint8_t LaserControlClass::getRealPower() {
 	return dac.getRealPower();
 }
 
-uint16_t LaserControlClass::getMaxPower() {
+uint8_t LaserControlClass::getMaxPower() {
 	return dac.getMaxPower();
 }
 
-uint16_t LaserControlClass::getPower() {
+uint8_t LaserControlClass::getPower() {
 	return dac.getPower();
 }
 
-void LaserControlClass::setLevel(uint16_t value) {
+void LaserControlClass::setLevel(uint8_t value) {
+	analogWrite(3, value);
 	if (!_isON) return;
 	if (value == dac.getLevel()) return;
 	dac.setLevel(value);
 	return;
 }
 
-uint16_t LaserControlClass::getLevel() {
+uint8_t LaserControlClass::getLevel() {
 	return dac.getLevel();
 }
 

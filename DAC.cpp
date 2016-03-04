@@ -53,15 +53,15 @@ float DAC::convertToVoltage(uint16_t value) {
 	return map(value, 0, 4096, 0, 500) / 100;
 }
 
-uint16_t DAC::getMin() {
+uint8_t DAC::getMin() {
 	return _min;
 }
 
-uint16_t DAC::getMax() {
+uint8_t DAC::getMax() {
 	return _max;
 }
 
-void DAC::setMaxPower(uint16_t max) {
+void DAC::setMaxPower(uint8_t max) {
 	// shut off
 	setPower(0);
 	_max = max;
@@ -80,7 +80,7 @@ void DAC::setMaxPower(uint16_t max) {
 //}
 //
 // set Level from 0 to 255
-void DAC::setLevel(uint16_t value) {
+void DAC::setLevel(uint8_t value) {
 	if (value >= 0 && value <= 255) {
 		//uint16_t tempValue = map(value, 0, 255, 0, _realMax);
 		_dac.setVoltage(map(value, 0, 255, 0, _realMax), false);
@@ -92,7 +92,7 @@ void DAC::setLevel(uint16_t value) {
 
 //
 // set Power from 0 to 100%
-void DAC::setPower(uint16_t value) {
+void DAC::setPower(uint8_t value) {
 	if (value >= 0 && value <= 100) {
 		//uint16_t tempValue = map(value, 0, 100, 0, _realMax);
 		_dac.setVoltage(map(value, 0, 100, 0, _realMax), false);
@@ -102,19 +102,19 @@ void DAC::setPower(uint16_t value) {
 	return;
 }
 
-uint16_t DAC::getLevel() {
+uint8_t DAC::getLevel() {
 	return _currentLevel;
 }
 
-uint16_t DAC::getPower() {
+uint8_t DAC::getPower() {
 	return _currentPower;
 }
 
-uint16_t DAC::getRealPower() {
+uint8_t DAC::getRealPower() {
 	return map(_currentPower, 0, 100, 0, _max);
 }
 
-uint16_t DAC::getMaxPower() {
+uint8_t DAC::getMaxPower() {
 	return _max;
 }
 

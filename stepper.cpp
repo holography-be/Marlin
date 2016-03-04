@@ -27,7 +27,6 @@
 ////#include "temperature.h"
 ////#include "ultralcd.h"
 #include "language.h"
-#include "cardreader.h"
 #include "speed_lookuptable.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
@@ -498,7 +497,8 @@ ISR(TIMER1_COMPA_vect)
 		// Check if endstop reached
 	  if (endstop_x_hit || endstop_y_hit || endstop_z_hit) break;
 	  // Set Laser Power
-	  LaserControl.setLevel(current_block->LaserPower);
+	  analogWrite(3, current_block->LaserPower);
+	  //LaserControl.setLevel(current_block->LaserPower);
       #ifndef AT90USB
       MSerial.checkRx(); // Check for serial chars.
       #endif
@@ -868,8 +868,6 @@ void finishAndDisableSteppers()
   disable_y();
   disable_z();
   disable_e0();
-  disable_e1();
-  disable_e2();
 }
 
 void quickStop()

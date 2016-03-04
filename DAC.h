@@ -15,14 +15,14 @@ class DAC
 {
  protected:
 	 Adafruit_MCP4725 _dac;
-	 uint16_t _min;
-	 uint16_t _max;
+	 uint8_t _min;
+	 uint8_t _max;
 	 uint16_t _realMax;
 	 float old_fvalue;
 	 uint16_t old_ivalue;
 	float convertToVoltage(uint16_t value);
-	uint16_t _currentPower;
-	uint16_t _currentLevel;
+	uint8_t _currentPower;
+	uint8_t _currentLevel;
 
  public:
 	void init();
@@ -31,17 +31,17 @@ class DAC
 	void setVoltage(uint16_t value);
 	//void setVoltage(float value);
 	//void setPercentVoltage(uint16_t value);
-	void setPower(uint16_t value);
-	void setLevel(uint16_t value);
-	void setMaxPower(uint16_t max);
+	void setPower(uint8_t value);
+	void setLevel(uint8_t value);
+	void setMaxPower(uint8_t max);
 	uint16_t currentValue;
 	float currentVoltage;
-	uint16_t getMin();
-	uint16_t getMax();
-	uint16_t getPower();
-	uint16_t getLevel();
-	uint16_t getRealPower();
-	uint16_t getMaxPower();
+	uint8_t getMin();
+	uint8_t getMax();
+	uint8_t getPower();
+	uint8_t getLevel();
+	uint8_t getRealPower();
+	uint8_t getMaxPower();
 
 };
 

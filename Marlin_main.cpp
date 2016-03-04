@@ -212,6 +212,8 @@ uint16_t laserMaxPower;
 uint8_t active_extruder = 0;
 int fanSpeed=0;
 
+char PixelSegment[1100];
+
 
 //===========================================================================
 //=============================Private Variables=============================
@@ -295,6 +297,19 @@ extern "C"{
     return free_memory;
   }
 }
+
+
+
+//////////uint16_t CalcSomme(uint8_t * Message, uint32_t size)
+//////////{
+//////////	uint16_t iuResult = 0;   // Resultat sur 8 bits
+//////////	//--- Calcul de la somme, le premier caractère est en position 1
+//////////
+//////////	for (uint32_t i = 0; i < size; i++)
+//////////		iuResult += Message[i];
+//////////	//--- Modulo Valeur Maxi sur 8 Bits
+//////////	return (iuResult %= 0xFFFF);
+//////////}
 
 //adds an command to the main command buffer
 //thats really done in a non-safe way.
@@ -495,10 +510,66 @@ void loop()
   //lcd_update();
 }
 
+
+bool myCode_seen(char code) {
+	strchr_pointer = strchr(PixelSegment, code);
+	return (strchr_pointer != NULL);  //Return True if a character was found
+}
+
+float myCode_value() {
+	return (strtod(strchr_pointer, NULL));
+}
+
+void receive_PixelSegment() {
+	uint16_t bufIndex = 0;
+	// empty PixelBuffer
+	for (bufIndex = 0; bufIndex < 1100; bufIndex++) {
+		PixelSegment[bufIndex] = 0;
+	}
+	PixelSegment[0] = 'A';
+	bufIndex = 1;	
+	while (1) {
+		if (MYSERIAL.available() > 0) {
+			serial_char = MYSERIAL.read();
+			PixelSegment[bufIndex++] = serial_char;
+			// dernier caractère
+			if (bufIndex == 1100) break;
+		}
+	}
+	// get params
+	// identique à G1 pour préparation déplacement
+	bool seen[4] = { false, false, false, false };
+	for (int8_t i = 0; i < NUM_AXIS; i++) {
+		if (myCode_seen(axis_codes[i]))
+		{
+			destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
+			seen[i] = true;
+		}
+		else destination[i] = current_position[i]; //Are these else lines really needed?
+	}
+	if (myCode_seen('F')) {
+		next_feedrate = myCode_value();
+		if (next_feedrate > 0.0) feedrate = next_feedrate;
+	}
+	// on prepare le segment mais attention, c'est synchrone
+	//prepare_move();
+
+		// return packet
+	for (bufIndex = 0; bufIndex < 1100; bufIndex++) {
+		MYSERIAL.write(PixelSegment[bufIndex]);
+	}	
+	MYSERIAL.println("");
+
+}
+
 void get_command()
 {
   while( MYSERIAL.available() > 0  && buflen < BUFSIZE) {
     serial_char = MYSERIAL.read();
+	// nouveau gcode pour Pixel Segment. Doit être traité avant tout
+	if (serial_char == 'A') {
+		receive_PixelSegment();
+	}
     if(serial_char == '\n' ||
        serial_char == '\r' ||
        (serial_char == ':' && comment_mode == false) ||
@@ -587,6 +658,10 @@ void get_command()
           }
 
         }
+		// new gcode for pixel segment
+		if ((strchr(cmdbuffer[bufindw], 'A') != NULL)) {
+
+		}
         bufindw = (bufindw + 1)%BUFSIZE;
         buflen += 1;
       }
@@ -598,70 +673,9 @@ void get_command()
       if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
     }
   }
-  #ifdef SDSUPPORT
-  if(!card.sdprinting || serial_count!=0){
-    return;
-  }
-
-  //'#' stops reading from SD to the buffer prematurely, so procedural macro calls are possible
-  // if it occurs, stop_buffering is triggered and the buffer is ran dry.
-  // this character _can_ occur in serial com, due to checksums. however, no checksums are used in SD printing
-
-  static bool stop_buffering=false;
-  if(buflen==0) stop_buffering=false;
-
-  while( !card.eof()  && buflen < BUFSIZE && !stop_buffering) {
-    int16_t n=card.get();
-    serial_char = (char)n;
-    if(serial_char == '\n' ||
-       serial_char == '\r' ||
-       (serial_char == '#' && comment_mode == false) ||
-       (serial_char == ':' && comment_mode == false) ||
-       serial_count >= (MAX_CMD_SIZE - 1)||n==-1)
-    {
-      if(card.eof()){
-        SERIAL_PROTOCOLLNPGM(MSG_FILE_PRINTED);
-        stoptime=millis();
-        char time[30];
-        unsigned long t=(stoptime-starttime)/1000;
-        int hours, minutes;
-        minutes=(t/60)%60;
-        hours=t/60/60;
-        sprintf_P(time, PSTR("%i hours %i minutes"),hours, minutes);
-        SERIAL_ECHO_START;
-        SERIAL_ECHOLN(time);
-        lcd_setstatus(time);
-        card.printingHasFinished();
-        card.checkautostart(true);
-
-      }
-      if(serial_char=='#')
-        stop_buffering=true;
-
-      if(!serial_count)
-      {
-        comment_mode = false; //for new command
-        return; //if empty line
-      }
-      cmdbuffer[bufindw][serial_count] = 0; //terminate string
-//      if(!comment_mode){
-        fromsd[bufindw] = true;
-        buflen += 1;
-        bufindw = (bufindw + 1)%BUFSIZE;
-//      }
-      comment_mode = false; //for new command
-      serial_count = 0; //clear buffer
-    }
-    else
-    {
-      if(serial_char == ';') comment_mode = true;
-      if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
-    }
-  }
-
-  #endif //SDSUPPORT
 
 }
+
 
 
 float code_value()
@@ -738,13 +752,13 @@ static void homeaxis(int axis) {
     destination[axis] = 1.5 * max_length(axis) * axis_home_dir;
     feedrate = homing_feedrate[axis];
 	// disable LaserPower
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
     st_synchronize();
 
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
     destination[axis] = -home_retract_mm(axis) * axis_home_dir;
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder,0);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
     st_synchronize();
 
     destination[axis] = 2*home_retract_mm(axis) * axis_home_dir;
@@ -753,7 +767,7 @@ static void homeaxis(int axis) {
 #else
     feedrate = homing_feedrate[axis]/2 ;
 #endif
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
     st_synchronize();
 
     axis_is_at_home(axis);
@@ -901,7 +915,7 @@ void process_commands()
         } else {
           feedrate *= sqrt(pow(max_length(X_AXIS) / max_length(Y_AXIS), 2) + 1);
         }
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, 0);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
         st_synchronize();
 
         axis_is_at_home(X_AXIS);
@@ -909,7 +923,7 @@ void process_commands()
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         destination[X_AXIS] = current_position[X_AXIS];
         destination[Y_AXIS] = current_position[Y_AXIS];
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder ,0);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, 0);
         feedrate = 0.0;
         st_synchronize();
         endstops_hit_on_purpose();
@@ -1430,7 +1444,7 @@ void process_commands()
 			  SERIAL_ECHOLN("Laser: ON");
 			  break;
 		  case 2:	// Set laser power
-			  if (code_seen('S')) { // 0->255
+			  if (code_seen('S')) { // 0->100
 				  laserPower = code_value_long();
 				  if ((laserPower >= 0) && (laserPower <= 100)) {
 					  LaserControl.setPower(laserPower);
@@ -1444,7 +1458,7 @@ void process_commands()
 		  case 3:	// get Laser Power
 			  laserPower = LaserControl.getPower();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHO("LaserPower: ");
+			  SERIAL_ECHOPGM("LaserPower: ");
 			  SERIAL_ECHOLN(laserPower);
 			  break;
 		  case 4:	// set Laser level
@@ -1462,13 +1476,13 @@ void process_commands()
 		  case 5:	// get Laser Level
 			  laserPower = LaserControl.getLevel();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHO("LaserLevel: ");
+			  SERIAL_ECHOPGM("LaserLevel: ");
 			  SERIAL_ECHOLN(laserPower);
 			  break;
 		  case 6: // Get Laser Temp
 			  laserTemp = LaserControl.getTemp();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHO("LaserTemp: ");
+			  SERIAL_ECHOPGM("LaserTemp: ");
 			  SERIAL_ECHOLN(laserTemp);
 			  break;
 		  case 7:	// Set Max Power
@@ -1482,13 +1496,13 @@ void process_commands()
 		  case 8:
 			  laserMaxPower = LaserControl.getMaxPower();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHO("LaserMaxPower: ");
+			  SERIAL_ECHOPGM("LaserMaxPower: ");
 			  SERIAL_ECHOLN(laserMaxPower);
 			  break;
 		  case 9:
 			  laserMaxPower = LaserControl.getRealPower();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHO("LaserRealPower: ");
+			  SERIAL_ECHOPGM("LaserRealPower: ");
 			  SERIAL_ECHOLN(laserMaxPower);
 			  break;
 		  case 10:
@@ -1501,7 +1515,7 @@ void process_commands()
 		  case 999: // Laser Emergency stop
 			  LaserControl.EmergencyStop();
 			  SERIAL_ECHO_START;
-			  SERIAL_ECHOLN("Laser: OFF");
+			  SERIAL_ECHOLNPGM("Laser: OFF");
 			  break;
 	  }
   }
@@ -1510,7 +1524,7 @@ void process_commands()
     tmp_extruder = code_value();
     if(tmp_extruder >= EXTRUDERS) {
       SERIAL_ECHO_START;
-      SERIAL_ECHO("T");
+      SERIAL_ECHOPGM("T");
       SERIAL_ECHO(tmp_extruder);
       SERIAL_ECHOLN(MSG_INVALID_EXTRUDER);
     }
@@ -1523,87 +1537,6 @@ void process_commands()
           feedrate = next_feedrate;
         }
       }
-      #if EXTRUDERS > 1
-      if(tmp_extruder != active_extruder) {
-        // Save current position to return to after applying extruder offset
-        memcpy(destination, current_position, sizeof(destination));
-      #ifdef DUAL_X_CARRIAGE
-        if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE && Stopped == false &&
-            (delayed_move_time != 0 || current_position[X_AXIS] != x_home_pos(active_extruder)))
-        {
-          // Park old head: 1) raise 2) move to park position 3) lower
-          plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,
-                current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-          plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,
-                current_position[E_AXIS], max_feedrate[X_AXIS], active_extruder);
-          plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS],
-                current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-          st_synchronize();
-        }
-
-        // apply Y & Z extruder offset (x offset is already used in determining home pos)
-        current_position[Y_AXIS] = current_position[Y_AXIS] -
-                     extruder_offset[Y_AXIS][active_extruder] +
-                     extruder_offset[Y_AXIS][tmp_extruder];
-        current_position[Z_AXIS] = current_position[Z_AXIS] -
-                     extruder_offset[Z_AXIS][active_extruder] +
-                     extruder_offset[Z_AXIS][tmp_extruder];
-
-        active_extruder = tmp_extruder;
-
-        // This function resets the max/min values - the current position may be overwritten below.
-        axis_is_at_home(X_AXIS);
-
-        if (dual_x_carriage_mode == DXC_FULL_CONTROL_MODE)
-        {
-          current_position[X_AXIS] = inactive_extruder_x_pos;
-          inactive_extruder_x_pos = destination[X_AXIS];
-        }
-        else if (dual_x_carriage_mode == DXC_DUPLICATION_MODE)
-        {
-          active_extruder_parked = (active_extruder == 0); // this triggers the second extruder to move into the duplication position
-          if (active_extruder == 0 || active_extruder_parked)
-            current_position[X_AXIS] = inactive_extruder_x_pos;
-          else
-            current_position[X_AXIS] = destination[X_AXIS] + duplicate_extruder_x_offset;
-          inactive_extruder_x_pos = destination[X_AXIS];
-          extruder_duplication_enabled = false;
-        }
-        else
-        {
-          // record raised toolhead position for use by unpark
-          memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
-          raised_parked_position[Z_AXIS] += TOOLCHANGE_UNPARK_ZLIFT;
-          active_extruder_parked = true;
-          delayed_move_time = 0;
-        }
-      #else
-        // Offset extruder (only by XY)
-        int i;
-        for(i = 0; i < 2; i++) {
-           current_position[i] = current_position[i] -
-                                 extruder_offset[i][active_extruder] +
-                                 extruder_offset[i][tmp_extruder];
-        }
-        // Set the new active extruder and position
-        active_extruder = tmp_extruder;
-      #endif //else DUAL_X_CARRIAGE
-#ifdef DELTA 
-
-  calculate_delta(current_position); // change cartesian kinematic  to  delta kinematic;
-   //sent position to plan_set_position();
-  plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],current_position[E_AXIS]);
-            
-#else
-        plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-
-#endif
-        // Move to the old position if 'F' was in the parameters
-        if(make_move && Stopped == false) {
-           prepare_move();
-        }
-      }
-      #endif
       SERIAL_ECHO_START;
       SERIAL_ECHO(MSG_ACTIVE_EXTRUDER);
       SERIAL_PROTOCOLLN((int)active_extruder);
@@ -1633,10 +1566,6 @@ void FlushSerialRequestResend()
 void ClearToSend()
 {
   previous_millis_cmd = millis();
-  #ifdef SDSUPPORT
-  if(fromsd[bufindr])
-    return;
-  #endif //SDSUPPORT
   SERIAL_PROTOCOLLNPGM(MSG_OK);
 }
 
@@ -1695,82 +1624,13 @@ void prepare_move()
   clamp_to_software_endstops(destination);
 
   previous_millis_cmd = millis();
-#ifdef DELTA
-  float difference[NUM_AXIS];
-  for (int8_t i=0; i < NUM_AXIS; i++) {
-    difference[i] = destination[i] - current_position[i];
-  }
-  float cartesian_mm = sqrt(sq(difference[X_AXIS]) +
-                            sq(difference[Y_AXIS]) +
-                            sq(difference[Z_AXIS]));
-  if (cartesian_mm < 0.000001) { cartesian_mm = abs(difference[E_AXIS]); }
-  if (cartesian_mm < 0.000001) { return; }
-  float seconds = 6000 * cartesian_mm / feedrate / feedmultiply;
-  int steps = max(1, int(delta_segments_per_second * seconds));
-  // SERIAL_ECHOPGM("mm="); SERIAL_ECHO(cartesian_mm);
-  // SERIAL_ECHOPGM(" seconds="); SERIAL_ECHO(seconds);
-  // SERIAL_ECHOPGM(" steps="); SERIAL_ECHOLN(steps);
-  for (int s = 1; s <= steps; s++) {
-    float fraction = float(s) / float(steps);
-    for(int8_t i=0; i < NUM_AXIS; i++) {
-      destination[i] = current_position[i] + difference[i] * fraction;
-    }
-    calculate_delta(destination);
-    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
-                     destination[E_AXIS], feedrate*feedmultiply/60/100.0,
-                     active_extruder);
-  }
-#else
-
-#ifdef DUAL_X_CARRIAGE
-  if (active_extruder_parked)
-  {
-    if (dual_x_carriage_mode == DXC_DUPLICATION_MODE && active_extruder == 0)
-    {
-      // move duplicate extruder into correct duplication position.
-      plan_set_position(inactive_extruder_x_pos, current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-      plan_buffer_line(current_position[X_AXIS] + duplicate_extruder_x_offset, current_position[Y_AXIS], current_position[Z_AXIS],
-          current_position[E_AXIS], max_feedrate[X_AXIS], 1);
-      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-      st_synchronize();
-      extruder_duplication_enabled = true;
-      active_extruder_parked = false;
-    }
-    else if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE) // handle unparking of head
-    {
-      if (current_position[E_AXIS] == destination[E_AXIS])
-      {
-        // this is a travel move - skit it but keep track of current position (so that it can later
-        // be used as start of first non-travel move)
-        if (delayed_move_time != 0xFFFFFFFFUL)
-        {
-          memcpy(current_position, destination, sizeof(current_position));
-          if (destination[Z_AXIS] > raised_parked_position[Z_AXIS])
-            raised_parked_position[Z_AXIS] = destination[Z_AXIS];
-          delayed_move_time = millis();
-          return;
-        }
-      }
-      delayed_move_time = 0;
-      // unpark extruder: 1) raise, 2) move into starting XY position, 3) lower
-      plan_buffer_line(raised_parked_position[X_AXIS], raised_parked_position[Y_AXIS], raised_parked_position[Z_AXIS],    current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-      plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], raised_parked_position[Z_AXIS],
-          current_position[E_AXIS], min(max_feedrate[X_AXIS],max_feedrate[Y_AXIS]), active_extruder);
-      plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS],
-          current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-      active_extruder_parked = false;
-    }
-  }
-#endif //DUAL_X_CARRIAGE
-
   // Do not use feedmultiply for E or Z only moves
   if( (current_position[X_AXIS] == destination [X_AXIS]) && (current_position[Y_AXIS] == destination [Y_AXIS])) {
-      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder, LaserLevelForCommand);
+      plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60,  LaserLevelForCommand);
   }
   else {
-    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0, active_extruder, LaserLevelForCommand);
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate*feedmultiply/60/100.0,  LaserLevelForCommand);
   }
-#endif //else DELTA
   for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }
@@ -1780,7 +1640,7 @@ void prepare_arc_move(char isclockwise) {
   float r = hypot(offset[X_AXIS], offset[Y_AXIS]); // Compute arc radius for mc_arc
 
   // Trace the arc
-  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, feedrate*feedmultiply/60/100.0, r, isclockwise, active_extruder, LaserLevelForCommand);
+  mc_arc(current_position, destination, offset, X_AXIS, Y_AXIS, Z_AXIS, feedrate*feedmultiply/60/100.0, r, isclockwise,  LaserLevelForCommand);
 
   // As far as the parser is concerned, the position is now == target. In reality the
   // motion control system might still be processing the action and the real tool position
