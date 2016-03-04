@@ -212,7 +212,7 @@ uint16_t laserMaxPower;
 uint8_t active_extruder = 0;
 int fanSpeed=0;
 
-char PixelSegment[1100];
+char PixelSegment[350];
 
 
 //===========================================================================
@@ -523,42 +523,47 @@ float myCode_value() {
 void receive_PixelSegment() {
 	uint16_t bufIndex = 0;
 	// empty PixelBuffer
-	for (bufIndex = 0; bufIndex < 1100; bufIndex++) {
-		PixelSegment[bufIndex] = 0;
+	for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+		PixelSegment[bufIndex] = 'X';
 	}
 	PixelSegment[0] = 'A';
 	bufIndex = 1;	
 	while (1) {
 		if (MYSERIAL.available() > 0) {
 			serial_char = MYSERIAL.read();
+			MYSERIAL.print(bufIndex);
+			MYSERIAL.print(" :");
+			MYSERIAL.print(serial_char);
 			PixelSegment[bufIndex++] = serial_char;
 			// dernier caractère
-			if (bufIndex == 1100) break;
+			if (bufIndex >= 550) break;
 		}
 	}
+
 	// get params
 	// identique à G1 pour préparation déplacement
-	bool seen[4] = { false, false, false, false };
-	for (int8_t i = 0; i < NUM_AXIS; i++) {
-		if (myCode_seen(axis_codes[i]))
-		{
-			destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-			seen[i] = true;
-		}
-		else destination[i] = current_position[i]; //Are these else lines really needed?
-	}
-	if (myCode_seen('F')) {
-		next_feedrate = myCode_value();
-		if (next_feedrate > 0.0) feedrate = next_feedrate;
-	}
-	// on prepare le segment mais attention, c'est synchrone
-	//prepare_move();
+	//////////bool seen[4] = { false, false, false, false };
+	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
+	//////////	if (myCode_seen(axis_codes[i]))
+	//////////	{
+	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
+	//////////		seen[i] = true;
+	//////////	}
+	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
+	//////////}
+	//////////if (myCode_seen('F')) {
+	//////////	next_feedrate = myCode_value();
+	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
+	//////////}
+	//////////// on prepare le segment mais attention, c'est synchrone
+	//////////prepare_move();
 
-		// return packet
-	for (bufIndex = 0; bufIndex < 1100; bufIndex++) {
-		MYSERIAL.write(PixelSegment[bufIndex]);
-	}	
-	MYSERIAL.println("");
+ //////////   // return packet
+	//////////MYSERIAL.println("");
+	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
+	//////////}	
+	//////////MYSERIAL.println("");
 
 }
 
@@ -566,10 +571,6 @@ void get_command()
 {
   while( MYSERIAL.available() > 0  && buflen < BUFSIZE) {
     serial_char = MYSERIAL.read();
-	// nouveau gcode pour Pixel Segment. Doit être traité avant tout
-	if (serial_char == 'A') {
-		receive_PixelSegment();
-	}
     if(serial_char == '\n' ||
        serial_char == '\r' ||
        (serial_char == ':' && comment_mode == false) ||
@@ -872,8 +873,13 @@ void process_commands()
         //lcd_update();
       }
       break;
+	case 5: // nouveau gcode pour Pixel Segment.		
+		if (Stopped == false) {
+			get_coordinates(); // For X Y Z E F
+			prepare_move();
+			//ClearToSend();
+			return;
     case 28: //G28 Home all Axis one at a time
-
 	  // Laser must be power off
 	  LaserControl.setLevel(0);
       saved_feedrate = feedrate;
