@@ -262,6 +262,9 @@ bool Stopped=false;
 bool CooldownNoWait = true;
 bool target_direction;
 
+unsigned long lastTimeStatusSent = 0;
+uint16_t delaiStatusSent = 1000;
+
 //Insert variables if CHDK is defined
 #ifdef CHDK
 unsigned long chdkHigh = 0;
@@ -370,39 +373,6 @@ void suicide()
   #endif
 }
 
-void servo_init()
-{
-  #if (NUM_SERVOS >= 1) && defined(SERVO0_PIN) && (SERVO0_PIN > -1)
-    servos[0].attach(SERVO0_PIN);
-  #endif
-  #if (NUM_SERVOS >= 2) && defined(SERVO1_PIN) && (SERVO1_PIN > -1)
-    servos[1].attach(SERVO1_PIN);
-  #endif
-  #if (NUM_SERVOS >= 3) && defined(SERVO2_PIN) && (SERVO2_PIN > -1)
-    servos[2].attach(SERVO2_PIN);
-  #endif
-  #if (NUM_SERVOS >= 4) && defined(SERVO3_PIN) && (SERVO3_PIN > -1)
-    servos[3].attach(SERVO3_PIN);
-  #endif
-  #if (NUM_SERVOS >= 5)
-    #error "TODO: enter initalisation code for more servos"
-  #endif
-
-  // Set position of Servo Endstops that are defined
-  #ifdef SERVO_ENDSTOPS
-  for(int8_t i = 0; i < 3; i++)
-  {
-    if(servo_endstops[i] > -1) {
-      servos[servo_endstops[i]].write(servo_endstop_angles[i * 2 + 1]);
-    }
-  }
-  #endif
-
-  #if defined (ENABLE_AUTO_BED_LEVELING) && (PROBE_SERVO_DEACTIVATION_DELAY > 0)
-  delay(PROBE_SERVO_DEACTIVATION_DELAY);
-  servos[servo_endstops[Z_AXIS]].detach();
-  #endif
-}
 
 void setup()
 {
@@ -464,7 +434,6 @@ void setup()
   plan_init();  // Initialize planner;
   watchdog_init();
   st_init();    // Initialize stepper, this enables interrupts!
-  servo_init();
   // init Laser
   LaserControl.init();
   
@@ -486,6 +455,8 @@ void setup()
 
 void loop()
 {
+
+
   if(buflen < (BUFSIZE-1))
     get_command();
   if(buflen)
@@ -508,6 +479,32 @@ void loop()
   }
   manage_inactivity();
   if (checkHitEndstops()) kill();
+  // status envoyé automatiquement (1 sec)
+  // send_Status()
+  if (millis() - lastTimeStatusSent > delaiStatusSent) {
+	  laserTemp = LaserControl.getTemp();
+	  SERIAL_PROTOCOLPGM("D[");
+	  SERIAL_PROTOCOL(current_position[X_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(current_position[Y_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(current_position[Z_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(current_position[E_AXIS]);
+	  SERIAL_PROTOCOLPGM("],C[");
+	  SERIAL_PROTOCOL(float(st_get_position(X_AXIS)) / axis_steps_per_unit[X_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(float(st_get_position(Y_AXIS)) / axis_steps_per_unit[Y_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(float(st_get_position(Z_AXIS)) / axis_steps_per_unit[Z_AXIS]);
+	  SERIAL_PROTOCOLPGM(";");
+	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
+	  SERIAL_PROTOCOLPGM("],T[");
+	  SERIAL_PROTOCOL(laserTemp);
+	  SERIAL_PROTOCOLLN("]");
+	  lastTimeStatusSent = millis();
+  }
+
   //lcd_update();
 }
 
@@ -522,57 +519,61 @@ bool myCode_seen(char code) {
 //////////	return (strtod(strchr_pointer, NULL));
 //////////}
 
-//void receive_PixelSegment() {
-//	//////////uint16_t bufIndex = 0;
-//	//////////// empty PixelBuffer
-//	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
-//	//////////	PixelSegment[bufIndex] = 'X';
-//	//////////}
-//	//////////PixelSegment[0] = 'A';
-//	//////////bufIndex = 1;	
-//	//////////while (1) {
-//	//////////	if (MYSERIAL.available() > 0) {
-//	//////////		serial_char = MYSERIAL.read();
-//	//////////		MYSERIAL.print(bufIndex);
-//	//////////		MYSERIAL.print(" :");
-//	//////////		MYSERIAL.print(serial_char);
-//	//////////		PixelSegment[bufIndex++] = serial_char;
-//	//////////		// dernier caractère
-//	//////////		if (bufIndex >= 550) break;
-//	//////////	}
-//	//////////}
-//
-//	// get params
-//	// identique à G1 pour préparation déplacement
-//	//////////bool seen[4] = { false, false, false, false };
-//	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
-//	//////////	if (myCode_seen(axis_codes[i]))
-//	//////////	{
-//	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-//	//////////		seen[i] = true;
-//	//////////	}
-//	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
-//	//////////}
-//	//////////if (myCode_seen('F')) {
-//	//////////	next_feedrate = myCode_value();
-//	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
-//	//////////}
-//	//////////// on prepare le segment mais attention, c'est synchrone
-//	//////////prepare_move();
-//
-// //////////   // return packet
-//	//////////MYSERIAL.println("");
-//	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
-//	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
-//	//////////}	
-//	//////////MYSERIAL.println("");
-//
-//}
+void receive_PixelSegment() {
+	//////////uint16_t bufIndex = 0;
+	//////////// empty PixelBuffer
+	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+	//////////	PixelSegment[bufIndex] = 'X';
+	//////////}
+	//////////PixelSegment[0] = 'A';
+	//////////bufIndex = 1;	
+	//////////while (1) {
+	//////////	if (MYSERIAL.available() > 0) {
+	//////////		serial_char = MYSERIAL.read();
+	//////////		MYSERIAL.print(bufIndex);
+	//////////		MYSERIAL.print(" :");
+	//////////		MYSERIAL.print(serial_char);
+	//////////		PixelSegment[bufIndex++] = serial_char;
+	//////////		// dernier caractère
+	//////////		if (bufIndex >= 550) break;
+	//////////	}
+	//////////}
+
+	////////// //get params
+	////////// //identique à G1 pour préparation déplacement
+	//////////bool seen[4] = { false, false, false, false };
+	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
+	//////////	if (myCode_seen(axis_codes[i]))
+	//////////	{
+	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
+	//////////		seen[i] = true;
+	//////////	}
+	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
+	//////////}
+	//////////if (myCode_seen('F')) {
+	//////////	next_feedrate = myCode_value();
+	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
+	//////////}
+	//////////// on prepare le segment mais attention, c'est synchrone
+	//////////prepare_move();
+
+ //////////   // return packet
+	//////////MYSERIAL.println("");
+	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
+	//////////}	
+	//////////MYSERIAL.println("");
+
+}
 
 void get_command()
 {
   while( MYSERIAL.available() > 0  && buflen < BUFSIZE) {
     serial_char = MYSERIAL.read();
+	// 
+	//
+	//
+
     if(serial_char == '\n' ||
        serial_char == '\r' ||
        (serial_char == ':' && comment_mode == false) ||
@@ -648,6 +649,7 @@ void get_command()
           case 1:
           case 2:
           case 3:
+		  case 5:
             if(Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
               SERIAL_PROTOCOLLNPGM(MSG_OK);
             }
@@ -661,10 +663,6 @@ void get_command()
           }
 
         }
-		// new gcode for pixel segment
-		if ((strchr(cmdbuffer[bufindw], 'A') != NULL)) {
-
-		}
         bufindw = (bufindw + 1)%BUFSIZE;
         buflen += 1;
       }
@@ -831,25 +829,11 @@ void process_commands()
         prepare_arc_move(false);
         return;
       }
-    case 4: // G4 dwell
-      //LCD_MESSAGEPGM(MSG_DWELL);
-      codenum = 0;
-      if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-      if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
-
-      st_synchronize();
-      codenum += millis();  // keep track of when we started waiting
-      previous_millis_cmd = millis();
-      while(millis()  < codenum ){
-        //manage_heater();
-        manage_inactivity();
-        //lcd_update();
-      }
-      break;
 	case 5: // nouveau gcode pour Pixel Segment.		
 		if (DEBUG) MYSERIAL.println("Prepare G5");
 		if (Stopped == false) {
 			get_coordinates(); // For X Y Z E F
+			prepare_move();
 			if (code_seen('S')) {
 				pixelSize = code_value();
 			}
@@ -863,6 +847,7 @@ void process_commands()
 				char tempByte;
 				char *ptr = pixelSegment;
 				char *dest = pixelSegment;
+				//val = ((high > '9' ? high - 55 : high - 48) << 4) + (low > '9' ? low - 55 : low - 48);
 				while (*ptr != '\0') {
 					if (*ptr > '9') {
 						tempByte = (*ptr - 55) * 16;
@@ -881,7 +866,7 @@ void process_commands()
 					ptr++;					
 				}
 				*dest = '\0';
-				prepare_move();
+				LaserLevelForCommand = 0;
 			}
 			else {
 				MYSERIAL.println("No pixels found.");
@@ -889,6 +874,22 @@ void process_commands()
 			//ClearToSend();
 			return;
 		}
+    case 4: // G4 dwell
+      //LCD_MESSAGEPGM(MSG_DWELL);
+      codenum = 0;
+      if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+      if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+
+      st_synchronize();
+      codenum += millis();  // keep track of when we started waiting
+      previous_millis_cmd = millis();
+      while(millis()  < codenum ){
+        //manage_heater();
+        manage_inactivity();
+        //lcd_update();
+      }
+      break;
+
     case 28: //G28 Home all Axis one at a time
 	  // Laser must be power off
 	  LaserControl.setLevel(0);
@@ -1153,26 +1154,30 @@ void process_commands()
       //lcd_setstatus(strchr_pointer + 5);
       break;
     case 114: // M114
-	  laserTemp = LaserControl.getTemp();
-      SERIAL_PROTOCOLPGM("D[");
-      SERIAL_PROTOCOL(current_position[X_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-      SERIAL_PROTOCOL(current_position[Y_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-      SERIAL_PROTOCOL(current_position[Z_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-      SERIAL_PROTOCOL(current_position[E_AXIS]);
-      SERIAL_PROTOCOLPGM("],C[");
-      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-	  SERIAL_PROTOCOLPGM(";");
-	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
-	  SERIAL_PROTOCOLPGM("],T[");
-	  SERIAL_PROTOCOL(laserTemp);
-      SERIAL_PROTOCOLLN("]");
+		if (code_seen('T')) {
+			uint16_t tempValue = code_value_long();
+			if (tempValue >= 500) delaiStatusSent = tempValue;
+		}
+		//////////laserTemp = LaserControl.getTemp();
+		//////////SERIAL_PROTOCOLPGM("D[");
+		//////////SERIAL_PROTOCOL(current_position[X_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(current_position[Y_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(current_position[Z_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(current_position[E_AXIS]);
+		//////////SERIAL_PROTOCOLPGM("],C[");
+		//////////SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+		//////////SERIAL_PROTOCOLPGM(";");
+		//////////SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
+		//////////SERIAL_PROTOCOLPGM("],T[");
+		//////////SERIAL_PROTOCOL(laserTemp);
+		//////////SERIAL_PROTOCOLLN("]");
       break;
     case 120: // M120
       enable_endstops(true) ;

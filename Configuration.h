@@ -1,7 +1,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#define DEBUG 1
+#define DEBUG 0
 
 // This configuration file contains the basic settings.
 // Advanced settings can be found in Configuration_adv.h

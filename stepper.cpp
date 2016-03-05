@@ -511,10 +511,10 @@ ISR(TIMER1_COMPA_vect)
 		//
 		// TO DO : Get LaserLevel (pixel) in pixelSegment for this position
 		//
-		if (current_block->pixelSegment != NULL) {  // si déplacement G5
-			current_X_Position = count_position[X_AXIS] / axis_steps_per_unit[X_AXIS];
-			//current_block->pixelSize;
-		}
+		//if (current_block->pixelSegment != NULL) {  // si déplacement G5
+		//	current_X_Position = count_position[X_AXIS] / axis_steps_per_unit[X_AXIS];
+		//	//current_block->pixelSize;
+		//}
 		counter_x -= current_block->step_event_count;
 		count_position[X_AXIS]+=count_direction[X_AXIS];   
 		WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
