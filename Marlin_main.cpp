@@ -532,6 +532,10 @@ void receive_PixelSegment() {
 		}
 		if (serial_count >= 198) break;
 	}
+	// vider le buffer pour avaler les fins de ligne si besoin ???
+	// 
+
+
 
     // return packet
 	//////////MYSERIAL.println("");
@@ -543,25 +547,12 @@ void receive_PixelSegment() {
 	bufindw = (bufindw + 1) % BUFSIZE;
 	buflen += 1;
 
-	////////// //get params
-	////////// //identique à G1 pour préparation déplacement
-	//////////bool seen[4] = { false, false, false, false };
-	//////////for (int8_t i = 0; i < NUM_AXIS; i++) {
-	//////////	if (myCode_seen(axis_codes[i]))
-	//////////	{
-	//////////		destination[i] = (float)myCode_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
-	//////////		seen[i] = true;
-	//////////	}
-	//////////	else destination[i] = current_position[i]; //Are these else lines really needed?
-	//////////}
-	//////////if (myCode_seen('F')) {
-	//////////	next_feedrate = myCode_value();
-	//////////	if (next_feedrate > 0.0) feedrate = next_feedrate;
-	//////////}
-	//////////// on prepare le segment mais attention, c'est synchrone
-	//////////prepare_move();
-
-
+	if (Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
+		SERIAL_PROTOCOLLNPGM(MSG_OK);
+	}
+	else {
+		SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+	}
 
 }
 
@@ -590,61 +581,7 @@ void get_command()
       cmdbuffer[bufindw][serial_count] = 0; //terminate string
       if(!comment_mode){
         comment_mode = false; //for new command
-        if(strchr(cmdbuffer[bufindw], 'N') != NULL)
-        {
-          strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
-          gcode_N = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
-          if(gcode_N != gcode_LastN+1 && (strstr_P(cmdbuffer[bufindw], PSTR("M110")) == NULL) ) {
-            SERIAL_ERROR_START;
-            SERIAL_ERRORPGM(MSG_ERR_LINE_NO);
-            SERIAL_ERRORLN(gcode_LastN);
-            //Serial.println(gcode_N);
-            FlushSerialRequestResend();
-            serial_count = 0;
-            return;
-          }
 
-          if(strchr(cmdbuffer[bufindw], '*') != NULL)
-          {
-            byte checksum = 0;
-            byte count = 0;
-            while(cmdbuffer[bufindw][count] != '*') checksum = checksum^cmdbuffer[bufindw][count++];
-            strchr_pointer = strchr(cmdbuffer[bufindw], '*');
-
-            if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum) {
-              SERIAL_ERROR_START;
-              SERIAL_ERRORPGM(MSG_ERR_CHECKSUM_MISMATCH);
-              SERIAL_ERRORLN(gcode_LastN);
-              FlushSerialRequestResend();
-              serial_count = 0;
-              return;
-            }
-            //if no errors, continue parsing
-          }
-          else
-          {
-            SERIAL_ERROR_START;
-            SERIAL_ERRORPGM(MSG_ERR_NO_CHECKSUM);
-            SERIAL_ERRORLN(gcode_LastN);
-            FlushSerialRequestResend();
-            serial_count = 0;
-            return;
-          }
-
-          gcode_LastN = gcode_N;
-          //if no errors, continue parsing
-        }
-        else  // if we don't receive 'N' but still see '*'
-        {
-          if((strchr(cmdbuffer[bufindw], '*') != NULL))
-          {
-            SERIAL_ERROR_START;
-            SERIAL_ERRORPGM(MSG_ERR_NO_LINENUMBER_WITH_CHECKSUM);
-            SERIAL_ERRORLN(gcode_LastN);
-            serial_count = 0;
-            return;
-          }
-        }
         if((strchr(cmdbuffer[bufindw], 'G') != NULL)){
           strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
           switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)))){
@@ -664,7 +601,6 @@ void get_command()
           default:
             break;
           }
-
         }
         bufindw = (bufindw + 1)%BUFSIZE;
         buflen += 1;
@@ -778,8 +714,9 @@ void process_commands()
 
   if (code_seen('A')) {
 	  MYSERIAL.println("pixelSegment");
-  
-  } else if(code_seen('G'))
+	  return;  
+  } 
+  else if(code_seen('G'))
   {
 	pixelSegment = NULL;
 	pixelSize = 0;
@@ -835,52 +772,7 @@ void process_commands()
 		}
         prepare_arc_move(false);
         return;
-      }
-	case 5: // nouveau gcode pour Pixel Segment.		
-		if (DEBUG) MYSERIAL.println("Prepare G5");
-		if (Stopped == false) {
-			get_coordinates(); // For X Y Z E F
-			prepare_move();
-			if (code_seen('S')) {
-				pixelSize = code_value();
-			}
-			else {
-				MYSERIAL.println("No size found.");
-			}
-			if (myCode_seen('P') != NULL) {
-				if (DEBUG) MYSERIAL.println(uint16_t(pixelSegment), HEX);
-				// Convert HEXString to Int in the buffer
-				pixelSegment++; // car pixelSegment pointe vers 'P' dans la commande
-				char tempByte;
-				char *ptr = pixelSegment;
-				char *dest = pixelSegment;
-				//val = ((high > '9' ? high - 55 : high - 48) << 4) + (low > '9' ? low - 55 : low - 48);
-				while (*ptr != '\0') {
-					if (*ptr > '9') {
-						tempByte = (*ptr - 55) * 16;
-					}
-					else {
-						tempByte = (*ptr - 48) * 16;
-					}
-					ptr++;
-					if (*ptr > '9') {
-						tempByte += (*ptr - 55);
-					}
-					else {
-						tempByte += (*ptr - 48);
-					}
-					*dest++ = tempByte;
-					ptr++;					
-				}
-				*dest = '\0';
-				LaserLevelForCommand = 0;
-			}
-			else {
-				MYSERIAL.println("No pixels found.");
-			}
-			//ClearToSend();
-			return;
-		}
+      }	
     case 4: // G4 dwell
       //LCD_MESSAGEPGM(MSG_DWELL);
       codenum = 0;
