@@ -228,14 +228,14 @@ static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
 static char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
-static bool fromsd[BUFSIZE];
+//static bool fromsd[BUFSIZE];
 static int bufindr = 0;
 static int bufindw = 0;
 static int buflen = 0;
 //static int i = 0;
 static char serial_char;
 static int serial_count = 0;
-static boolean comment_mode = false;
+static bool comment_mode = false;
 static char *strchr_pointer; // just a pointer to find chars in the command string like X, Y, Z, E, etc
 static char *pixelSegment; // pointeur vers pixelSegment
 static float pixelSize; // taille d'un pixel.
@@ -263,7 +263,7 @@ bool CooldownNoWait = true;
 bool target_direction;
 
 unsigned long lastTimeStatusSent = 0;
-uint16_t delaiStatusSent = 1000;
+uint16_t delaiStatusSent = 100000;
 
 //Insert variables if CHDK is defined
 #ifdef CHDK
@@ -422,10 +422,7 @@ void setup()
   SERIAL_ECHO(freeMemory());
   SERIAL_ECHOPGM(MSG_PLANNER_BUFFER_BYTES);
   SERIAL_ECHOLN((int)sizeof(block_t)*BLOCK_BUFFER_SIZE);
-  for(int8_t i = 0; i < BUFSIZE; i++)
-  {
-    fromsd[i] = false;
-  }
+
 
   // loads data from EEPROM if available else uses defaults (and resets step acceleration rate)
   Config_RetrieveSettings();
@@ -520,24 +517,31 @@ bool myCode_seen(char code) {
 //////////}
 
 void receive_PixelSegment() {
-	//////////uint16_t bufIndex = 0;
-	//////////// empty PixelBuffer
-	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
+	uint16_t bufIndex = 0;
+	// empty PixelBuffer
+	//////////for (bufIndex = 0; bufIndex < 200; bufIndex++) {
 	//////////	PixelSegment[bufIndex] = 'X';
 	//////////}
 	//////////PixelSegment[0] = 'A';
 	//////////bufIndex = 1;	
-	//////////while (1) {
-	//////////	if (MYSERIAL.available() > 0) {
-	//////////		serial_char = MYSERIAL.read();
-	//////////		MYSERIAL.print(bufIndex);
-	//////////		MYSERIAL.print(" :");
-	//////////		MYSERIAL.print(serial_char);
-	//////////		PixelSegment[bufIndex++] = serial_char;
-	//////////		// dernier caractère
-	//////////		if (bufIndex >= 550) break;
-	//////////	}
-	//////////}
+	cmdbuffer[bufindw][serial_count++] = serial_char;
+	while (1) {
+		if (MYSERIAL.available() > 0) {
+			serial_char = MYSERIAL.read();
+			cmdbuffer[bufindw][serial_count++] = serial_char;
+		}
+		if (serial_count >= 198) break;
+	}
+
+    // return packet
+	//////////MYSERIAL.println("");
+	//////////for (bufIndex = 0; bufIndex < 200; bufIndex++) {
+	//////////	MYSERIAL.print(cmdbuffer[bufindw][bufIndex]);
+	//////////}	
+	//////////MYSERIAL.println("");
+
+	bufindw = (bufindw + 1) % BUFSIZE;
+	buflen += 1;
 
 	////////// //get params
 	////////// //identique à G1 pour préparation déplacement
@@ -557,12 +561,7 @@ void receive_PixelSegment() {
 	//////////// on prepare le segment mais attention, c'est synchrone
 	//////////prepare_move();
 
- //////////   // return packet
-	//////////MYSERIAL.println("");
-	//////////for (bufIndex = 0; bufIndex < 550; bufIndex++) {
-	//////////	MYSERIAL.print(PixelSegment[bufIndex]);
-	//////////}	
-	//////////MYSERIAL.println("");
+
 
 }
 
@@ -571,8 +570,13 @@ void get_command()
   while( MYSERIAL.available() > 0  && buflen < BUFSIZE) {
     serial_char = MYSERIAL.read();
 	// 
+	// intercept ligne de pixel
 	//
-	//
+	if (serial_char == 'A' && serial_count == 0) {
+		receive_PixelSegment();
+		serial_char = ';';
+		serial_count = 0;
+	}
 
     if(serial_char == '\n' ||
        serial_char == '\r' ||
@@ -586,7 +590,6 @@ void get_command()
       cmdbuffer[bufindw][serial_count] = 0; //terminate string
       if(!comment_mode){
         comment_mode = false; //for new command
-        fromsd[bufindw] = false;
         if(strchr(cmdbuffer[bufindw], 'N') != NULL)
         {
           strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
@@ -772,7 +775,11 @@ void process_commands()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
-  if(code_seen('G'))
+
+  if (code_seen('A')) {
+	  MYSERIAL.println("pixelSegment");
+  
+  } else if(code_seen('G'))
   {
 	pixelSegment = NULL;
 	pixelSize = 0;
@@ -1026,7 +1033,12 @@ void process_commands()
   { 
     switch( (int)code_value() )
     {
-
+	case 17:
+		enable_x();
+		enable_y();
+		enable_z();
+		enable_e0();
+		break;
     #if defined(FAN_PIN) && FAN_PIN > -1
       case 106: //M106 Fan On
         if (code_seen('S')){
