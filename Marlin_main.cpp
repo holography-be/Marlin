@@ -263,7 +263,7 @@ bool CooldownNoWait = true;
 bool target_direction;
 
 unsigned long lastTimeStatusSent = 0;
-uint16_t delaiStatusSent = 100000;
+unsigned long delaiStatusSent = 100000;
 
 //Insert variables if CHDK is defined
 #ifdef CHDK
@@ -471,9 +471,9 @@ void loop()
 	  SERIAL_ERRORPGM("Temp Laser Too high : ");
 	  SERIAL_ERROR(LaserControl.getTemp());
 	  // no time to waste
-	  LaserControl.EmergencyStop();
 	  kill();
   }
+
   manage_inactivity();
   if (checkHitEndstops()) kill();
   // status envoyé automatiquement (1 sec)
@@ -498,6 +498,8 @@ void loop()
 	  SERIAL_PROTOCOL(float(st_get_position(E_AXIS)) / axis_steps_per_unit[E_AXIS]);
 	  SERIAL_PROTOCOLPGM("],T[");
 	  SERIAL_PROTOCOL(laserTemp);
+	  SERIAL_PROTOCOL("],M[");
+	  SERIAL_PROTOCOL(freeMemory());
 	  SERIAL_PROTOCOLLN("]");
 	  lastTimeStatusSent = millis();
   }
@@ -517,33 +519,20 @@ bool myCode_seen(char code) {
 //////////}
 
 void receive_PixelSegment() {
-	uint16_t bufIndex = 0;
-	// empty PixelBuffer
-	//////////for (bufIndex = 0; bufIndex < 200; bufIndex++) {
-	//////////	PixelSegment[bufIndex] = 'X';
-	//////////}
-	//////////PixelSegment[0] = 'A';
-	//////////bufIndex = 1;	
-	cmdbuffer[bufindw][serial_count++] = serial_char;
+	int bufIndex = 0;
+	MYSERIAL.write(serial_char);
+	cmdbuffer[bufindw][bufIndex++] = 'A';
 	while (1) {
 		if (MYSERIAL.available() > 0) {
 			serial_char = MYSERIAL.read();
-			cmdbuffer[bufindw][serial_count++] = serial_char;
+			cmdbuffer[bufindw][bufIndex++] = serial_char;
+			MYSERIAL.write(serial_char);
 		}
-		if (serial_count >= 198) break;
+		if (bufIndex >= 198) break;
 	}
 	// vider le buffer pour avaler les fins de ligne si besoin ???
 	// 
-
-
-
-    // return packet
-	//////////MYSERIAL.println("");
-	//////////for (bufIndex = 0; bufIndex < 200; bufIndex++) {
-	//////////	MYSERIAL.print(cmdbuffer[bufindw][bufIndex]);
-	//////////}	
-	//////////MYSERIAL.println("");
-
+	MYSERIAL.println("");
 	bufindw = (bufindw + 1) % BUFSIZE;
 	buflen += 1;
 
@@ -563,11 +552,24 @@ void get_command()
 	// 
 	// intercept ligne de pixel
 	//
-	if (serial_char == 'A' && serial_count == 0) {
-		receive_PixelSegment();
-		serial_char = ';';
-		serial_count = 0;
-	}
+	//////////if (serial_char == 'A' && serial_count == 0) {
+	//////////	MYSERIAL.println("Get A");
+	//////////	receive_PixelSegment();
+	//////////	serial_char = ';';
+	//////////	serial_count = 0;
+
+	//////////	//////////bufindw = (bufindw + 1) % BUFSIZE;
+	//////////	//////////buflen += 1;
+
+	//////////	//////////if (Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
+	//////////	//////////	SERIAL_PROTOCOLLNPGM(MSG_OK);
+	//////////	//////////}
+	//////////	//////////else {
+	//////////	//////////	SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+	//////////	//////////}
+
+	//////////	return;
+	//////////}
 
     if(serial_char == '\n' ||
        serial_char == '\r' ||
@@ -602,6 +604,15 @@ void get_command()
             break;
           }
         }
+		if ((strchr(cmdbuffer[bufindw], 'A') != NULL)){
+			if (Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
+				SERIAL_PROTOCOLLNPGM(MSG_OK);
+			}
+			else {
+				SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+				//LCD_MESSAGEPGM(MSG_STOPPED);
+			}
+		}
         bufindw = (bufindw + 1)%BUFSIZE;
         buflen += 1;
       }
@@ -712,14 +723,12 @@ void process_commands()
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
 
-  if (code_seen('A')) {
-	  MYSERIAL.println("pixelSegment");
-	  return;  
-  } 
-  else if(code_seen('G'))
+  //////////if (code_seen('A')) {
+	 ////////// MYSERIAL.println("pixelSegment");
+	 ////////// return;  
+  //////////} 
+  if(code_seen('G'))
   {
-	pixelSegment = NULL;
-	pixelSize = 0;
     switch((int)code_value())
     {
     case 0: // G0 -> G1
@@ -773,6 +782,42 @@ void process_commands()
         prepare_arc_move(false);
         return;
       }	
+	case 5:	// pixelSegment
+
+		if (DEBUG) MYSERIAL.println("Prepare G5");
+		if (Stopped == false) {
+			get_coordinates(); // For X Y Z E F
+			prepare_move();
+			if (code_seen('S')) {
+				pixelSize = code_value();
+			}
+			else {
+				MYSERIAL.println("No size for pixel.");
+				//ClearToSend();
+				return;
+			}
+			if (code_seen('P')) {
+				char tempByte;
+				char *ptr = pixelSegment;
+				char *dest = pixelSegment;
+				//val = ((high > '9' ? high - 55 : high - 48) << 4) + (low > '9' ? low - 55 : low - 48);
+				while (*ptr != '\0') {
+					if (*ptr > '9') {
+						tempByte = (*ptr - 55) * 16;
+						ptr++;
+					}
+					*dest = '\0';
+					prepare_move();
+					LaserLevelForCommand = 0;
+				}
+			}
+			else {
+				MYSERIAL.println("No pixels found.");
+				//ClearToSend();
+				return;
+			}
+		}
+		return;
     case 4: // G4 dwell
       //LCD_MESSAGEPGM(MSG_DWELL);
       codenum = 0;
@@ -925,6 +970,16 @@ void process_commands()
   { 
     switch( (int)code_value() )
     {
+	case 0:	// Emergency Stop
+		kill();
+		break;
+	case 1: // Stop.  Arrêt immédiat, on attend pas les mouvements enregistrés.
+		LaserControl.Stop();
+		disable_x();
+		disable_y();
+		disable_z();
+		disable_e0();
+		break;
 	case 17:
 		enable_x();
 		enable_y();
@@ -1004,7 +1059,7 @@ void process_commands()
       break;
     case 114: // M114
 		if (code_seen('T')) {
-			uint16_t tempValue = code_value_long();
+			unsigned long tempValue = code_value_long();
 			if (tempValue >= 500) delaiStatusSent = tempValue;
 		}
 		//////////laserTemp = LaserControl.getTemp();
@@ -1490,12 +1545,12 @@ void kill()
 {
   cli(); // Stop interrupts
   ////disable_heater();
-
+  LaserControl.EmergencyStop();
   disable_x();
   disable_y();
   disable_z();
   disable_e0();
-  LaserControl.EmergencyStop();
+
 
 #if defined(PS_ON_PIN) && PS_ON_PIN > -1
   pinMode(PS_ON_PIN,INPUT);
