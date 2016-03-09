@@ -40,11 +40,11 @@ void _EEPROM_readData(int &pos, uint8_t* value, uint8_t size)
 #ifdef DELTA
 #define EEPROM_VERSION "V11"
 #else
-#define EEPROM_VERSION "V10"
+#define EEPROM_VERSION "V11"
 #endif
 
 #ifdef EEPROM_SETTINGS
-void Config_StoreSettings() 
+void Config_StoreSettings()		// M500
 {
   char ver[4]= "000";
   int i=EEPROM_OFFSET;
@@ -76,7 +76,7 @@ void Config_StoreSettings()
 
 
 #ifndef DISABLE_M503
-void Config_PrintSettings()
+void Config_PrintSettings()  // M503
 {  // Always have this function, even with EEPROM_SETTINGS disabled, the current values will be shown
     //SERIAL_ECHO_START;
 	SERIAL_ECHOLN("START_EEPROM");
@@ -140,13 +140,13 @@ void Config_PrintSettings()
 
 
 #ifdef EEPROM_SETTINGS
-void Config_RetrieveSettings()
+void Config_RetrieveSettings()  // M501
 {
     int i=EEPROM_OFFSET;
     char stored_ver[4];
     char ver[4]=EEPROM_VERSION;
     EEPROM_READ_VAR(i,stored_ver); //read stored version
-    //SERIAL_ECHOLN("Version: [" << ver << "] Stored version: [" << stored_ver << "]");
+	MYSERIAL.print("Version: [");  MYSERIAL.print(ver);  MYSERIAL.print("] Stored version: [");  MYSERIAL.print(stored_ver); MYSERIAL.println("]");
     if (strncmp(ver,stored_ver,3) == 0)
     {
         // version number match
@@ -176,6 +176,7 @@ void Config_RetrieveSettings()
     }
     else
     {
+		MYSERIAL.println("Reset From Default");
         Config_ResetDefault();
     }
     #ifdef EEPROM_CHITCHAT
@@ -184,7 +185,7 @@ void Config_RetrieveSettings()
 }
 #endif
 
-void Config_ResetDefault()
+void Config_ResetDefault()  // M502
 {
     float tmp1[]=DEFAULT_AXIS_STEPS_PER_UNIT;
     float tmp2[]=DEFAULT_MAX_FEEDRATE;
@@ -219,5 +220,9 @@ void Config_ResetDefault()
 
 SERIAL_ECHO_START;
 SERIAL_ECHOLNPGM("Hardcoded Default Settings Loaded");
+
+}
+
+void Config_Default() {
 
 }

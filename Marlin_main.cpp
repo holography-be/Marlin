@@ -263,7 +263,7 @@ bool CooldownNoWait = true;
 bool target_direction;
 
 unsigned long lastTimeStatusSent = 0;
-unsigned long delaiStatusSent = 100000;
+unsigned long delaiStatusSent = 1000;
 
 //Insert variables if CHDK is defined
 #ifdef CHDK
@@ -787,7 +787,6 @@ void process_commands()
 		if (DEBUG) MYSERIAL.println("Prepare G5");
 		if (Stopped == false) {
 			get_coordinates(); // For X Y Z E F
-			prepare_move();
 			if (code_seen('S')) {
 				pixelSize = code_value();
 			}
@@ -796,20 +795,18 @@ void process_commands()
 				//ClearToSend();
 				return;
 			}
-			if (code_seen('P')) {
+			if (myCode_seen('P')) {
 				char tempByte;
-				char *ptr = pixelSegment;
-				char *dest = pixelSegment;
+				char *ptr = pixelSegment + 1;
+				char *dest = pixelSegment + 1;
 				//val = ((high > '9' ? high - 55 : high - 48) << 4) + (low > '9' ? low - 55 : low - 48);
 				while (*ptr != '\0') {
-					if (*ptr > '9') {
-						tempByte = (*ptr - 55) * 16;
-						ptr++;
-					}
-					*dest = '\0';
-					prepare_move();
-					LaserLevelForCommand = 0;
+					*dest = ((*(ptr++) - 65) << 4) + (*(ptr++) - 65);
+					dest++;
 				}
+				//*dest = '\0';
+				prepare_move();
+				LaserLevelForCommand = 0;			
 			}
 			else {
 				MYSERIAL.println("No pixels found.");
@@ -1188,6 +1185,11 @@ void process_commands()
         Config_PrintSettings();
     }
     break;
+	case 504: // M504 print settings in contants
+	{
+		Config_Default();
+	}
+	break;
     #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
     case 540:
     {
