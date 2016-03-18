@@ -51,6 +51,7 @@
 #include "DAC.h"
 #include "LaserControl.h"
 #include "Thermistor.h"
+#include "Adafruit_RGBLCDShield.h"
 
 #ifdef AT90USB
    #ifdef BTENABLED
@@ -250,6 +251,8 @@ extern unsigned long stoptime;
 
 // Handling multiple extruders pins
 extern uint8_t active_extruder;
+
+extern Adafruit_RGBLCDShield lcd;
 
 #ifdef DIGIPOT_I2C
 extern void digipot_i2c_set_current( int channel, float current );

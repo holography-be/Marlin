@@ -334,6 +334,7 @@ ISR(TIMER1_COMPA_vect)
       counter_z = counter_x;
       counter_e = counter_x;
       step_events_completed = 0;
+	  
 
       #ifdef Z_LATE_ENABLE
         if(current_block->steps_z > 0) {
@@ -511,12 +512,17 @@ ISR(TIMER1_COMPA_vect)
 		//
 		// TO DO : Get LaserLevel (pixel) in pixelSegment for this position
 		//
+		counter_x -= current_block->step_event_count;
+		count_position[X_AXIS]+=count_direction[X_AXIS];   
 		//if (current_block->pixelSegment != NULL) {  // si déplacement G5
 		//	current_X_Position = count_position[X_AXIS] / axis_steps_per_unit[X_AXIS];
 		//	//current_block->pixelSize;
 		//}
-		counter_x -= current_block->step_event_count;
-		count_position[X_AXIS]+=count_direction[X_AXIS];   
+		//sei();
+		//lcd.blink();
+		//cli();
+		//laserMaxPower = 0;
+
 		WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
       }
 

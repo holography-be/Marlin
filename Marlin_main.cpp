@@ -57,6 +57,10 @@
 // look here for descriptions of G-codes: http://linuxcnc.org/handbook/gcode/g-code.html
 // http://objects.reprap.org/wiki/Mendel_User_Manual:_RepRapGCodes
 
+
+#define NOP __asm__("nop\n\t")
+
+
 //Implemented Codes
 //-------------------
 // G0  -> G1
@@ -178,6 +182,40 @@
 // L8   - Get Max Power
 // L999 - Laser Emergency stop
 
+
+// Signals to slave Nano
+//
+// use PORTA to send Laser level power
+// PORTA : D22 -> D29 (0..7)
+// Fast IO operations
+//	Write :		PORTA = level (uint8_t)
+//	Read  :		level = PINA 
+//	Direction :	output : DDRA = 255 (all output)
+//
+// Send signal to Nano.
+// Intercept by Nano as Rise Interrupt
+// PORTC : D30 (7)
+// Fast IO operations
+// Write :		Set : PORTC |= (1 << 7); Reset : PORTC &= ~(1 << 7)
+// Read	 :		PINC & (1 << 7) -> jamais utilisé
+// Direction :	output : DDRC |= (1 << 7)
+//				input = DDRC &= ~(1 << 7)
+// Use :		
+//		PORTC |= (1 << 7);
+//		NOP;
+//		PORTC PORTC &= ~(1 << 7);
+//
+// Status of Nano.
+// PORTC : D31 (6)
+// true = Ready - False = Busy
+// Fast IO operations
+// Write :		PORTC |= (1 << 6) -> jamais utilisé
+// Read	 :		PINC & (1 << 6) -> true = ready, false = busy (or offline)
+// Direction :	output : DDRC |= (1 << 6)
+//				input = DDRC &= ~(1 << 6)
+//
+
+
 //Stepper Movement Variables
 
 //===========================================================================
@@ -188,6 +226,8 @@
 //===========================================================================
 //=============================public variables=============================
 //===========================================================================
+
+
 
 
 float homing_feedrate[] = HOMING_FEEDRATE;
@@ -212,6 +252,7 @@ uint16_t laserMaxPower;
 uint8_t active_extruder = 0;
 int fanSpeed=0;
 
+Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 
 
 
@@ -376,6 +417,7 @@ void suicide()
 
 void setup()
 {
+
   analogReference(EXTERNAL);  // for thermistors
   //digitalWrite(Relais1, HIGH);
   //digitalWrite(Relais2, HIGH);
@@ -437,6 +479,8 @@ void setup()
 //  Dac.init();
 //  Dac.setVoltage(float(0.00)); // apply 0V to laser driver
 
+  lcd.begin(16, 2);
+  lcd.print("Hello, world!");
   //lcd_splashscreen();
   //lcd_init();
 

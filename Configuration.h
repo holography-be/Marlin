@@ -752,6 +752,6 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 * DAC (Ditigal to Analog converter) 
 ****************************************************************************/
 #define DAC_MAX_VOLTAGE	5
-#define DAC_I2C_ADRESS 	0x62
+#define DAC_I2C_ADRESS 	0x60
 
 #endif //__CONFIGURATION_H
