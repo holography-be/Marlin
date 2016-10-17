@@ -30,56 +30,70 @@
 
 #if MOTHERBOARD == 77
 
-    #define X_DIR_PIN          23
-    #define X_STEP_PIN         25
-    #define X_ENABLE_PIN       27
-    #define X_MIN_PIN          22
-    #define X_MAX_PIN          24   
+    #define X_DIR_PIN          22
+    #define X_STEP_PIN         24
+    #define X_ENABLE_PIN       26
+    #define Y_DIR_PIN          23
+    #define Y_STEP_PIN         25
+    #define Y_ENABLE_PIN       27
+    #define Z_DIR_PIN          28
+    #define Z_STEP_PIN         30
+    #define Z_ENABLE_PIN       32
+    #define E_DIR_PIN         29
+    #define E_STEP_PIN        31
+    #define E_ENABLE_PIN      33
 
-    #define Y_DIR_PIN          29
-    #define Y_STEP_PIN         31
-    #define Y_ENABLE_PIN       33
-    #define Y_MIN_PIN          26
-    #define Y_MAX_PIN          28
-
-    #define Z_DIR_PIN          35
-    #define Z_STEP_PIN         37
-    #define Z_ENABLE_PIN       39
-    #define Z_MIN_PIN          30
-    #define Z_MAX_PIN          32
-
+    #define X_MIN_PIN          34
+    #define X_MAX_PIN          35   
+    #define Y_MIN_PIN          36
+    #define Y_MAX_PIN          37
+    #define Z_MIN_PIN          38
+    #define Z_MAX_PIN          39
     #define Z2_STEP_PIN        -1
     #define Z2_DIR_PIN         -1
     #define Z2_ENABLE_PIN      -1
 
-    #define E0_DIR_PIN         41
-    #define E0_STEP_PIN        43
-    #define E0_ENABLE_PIN      45
-
-	#define PROBE_Z_PIN		   34
-	#define INTERLOCK_PIN      36
-
+	#define PROBE_Z_PIN		   40
+	#define INTERLOCK_PIN      41
 
     #define SDPOWER            -1
     #define SDSS               53
     #define LED_PIN            13
 
-    #define BEEPER             40	
+    //#define BEEPER             40	
 
     #define FAN_PIN            8 
 
-	#define Relais1			   42
-	#define Relais2			   40
-	#define Relais3			   46
-    #define Relais4            44
-	#define ModuleRelaisPower  48
-	#define Laser_Driver_PIN		Relais1
-	#define Laser_Peltier_PIN		Relais2
-	#define Laser_Diode_PIN			Relais3
-	#define Laser_Temp_PIN			A0 // ANALOG
+	#define Relais1				2
+	#define Relais2				3
+	#define Relais3				4
+    #define Relais4				5
+	#define ModuleRelaisPower	6
+	#define Laser_Driver_PIN	Relais1
+	#define Laser_Peltier_PIN	Relais2
+	#define Laser_Diode_PIN		Relais3
+	#define Laser_Temp_PIN		A0 // ANALOG
+	#define LaserPower_PIN		9  // PWM
+	#define LaserPWM			OCR2B
 
-    #define Laser_Start_Sequence	 Laser_Driver_PIN,Laser_Peltier_PIN,Laser_Diode_PIN
-  	#define Laser_Stop_Sequence		 Laser_Diode_PIN,Laser_Peltier_PIN,Laser_Driver_PIN
+	// Define Laser Temp Bus to send desired laser level to Nano // JDU
+	// Just set PORTL = Value (uint_8)
+	// Digital Pin D49 : Bit 0
+	// Digital Pin D48 : Bit 1
+	// Digital Pin D47 : Bit 2
+	// Digital Pin D46 : Bit 3
+	// Digital Pin D45 : Bit 4
+	// Digital Pin D44 : Bit 5
+	// Digital Pin D43 : Bit 6
+	// Digital Pin D42 : Bit 7
+
+	//#define LASERLEVEL_DDR	DDRL
+	//#define LASERLEVEL_PIN	PINL
+	//#define LASERLEVEL_PORT	PORTL
+	//#define LASERLEVEL_REQUEST	50	// Send signal to Nano that we wish send datas
+	//#define LASERLEVEL_STATUS	51	// Signal send by Nano (HIGH = Ready, LOW = Busy)
+    #define Laser_Start_Sequence	 Laser_Peltier_PIN,Laser_Driver_PIN,Laser_Diode_PIN
+  	#define Laser_Stop_Sequence		 Laser_Diode_PIN,Laser_Driver_PIN,Laser_Peltier_PIN
     #define Laser_Emergency_Sequence Laser_Diode_PIN,Laser_Driver_PIN // On laisse le Peltier 
 	#define Laser_Delai_Sequence	 1500
 
@@ -88,8 +102,10 @@
 
   #define TEMP_BED_PIN       14   // ANALOG NUMBERING
 
-#endif
 
+
+#endif
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 // SPI for Max6675 Thermocouple 
 
 #ifndef SDSUPPORT
@@ -109,7 +125,7 @@
 #endif
 
 //List of pins which to ignore when asked to change by gcode, 0 and 1 are RX and TX, do not mess with those!
-#define _E0_PINS E0_STEP_PIN, E0_DIR_PIN, E0_ENABLE_PIN,
+#define _E_PINS E_STEP_PIN, E_DIR_PIN, E_ENABLE_PIN,
 
 
 #ifdef X_STOP_PIN
@@ -150,6 +166,6 @@
 
 #define SENSITIVE_PINS {0, 1, X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X_MIN_PIN, X_MAX_PIN, Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_MIN_PIN, Y_MAX_PIN, Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, Z_MIN_PIN, Z_MAX_PIN, PS_ON_PIN, \
                         FAN_PIN,                  \
-                        _E0_PINS             \
+                        _E_PINS             \
                         analogInputToDigitalPin(TEMP_BED_PIN) }
 #endif

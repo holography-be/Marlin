@@ -94,8 +94,6 @@ extern "C" void __cxa_pure_virtual() {;}
 #include <..\Marlin\ConfigurationStore.cpp>
 #include <..\Marlin\ConfigurationStore.h>
 #include <..\Marlin\Configuration_adv.h>
-#include <..\Marlin\DAC.cpp>
-#include <..\Marlin\DAC.h>
 #include <..\Marlin\LaserControl.cpp>
 #include <..\Marlin\LaserControl.h>
 #include <..\Marlin\Marlin.h>

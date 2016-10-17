@@ -102,6 +102,8 @@ FORCE_INLINE void serialprintPGM(const char *str)
   }
 }
 
+// helper
+#define NOP __asm__("nop\n\t")
 
 void get_command();
 void process_commands();

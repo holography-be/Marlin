@@ -30,9 +30,9 @@
 /* All the implementation is done in *.cpp files to get better compatibility with avr-gcc without the Arduino IDE */
 /* Use this file to help the Arduino IDE find which Arduino libraries are needed and to keep documentation on GCode */
 
+
 #include "Thermistor.h"
 #include "LaserControl.h"
-#include "DAC.h"
 #include <Adafruit_RGBLCDShield.h>
 #include <Adafruit_MCP23017.h>
 #include "Configuration.h"

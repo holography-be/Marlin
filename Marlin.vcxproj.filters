@@ -61,9 +61,6 @@
     <ClInclude Include="watchdog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DAC.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Adafruit_MCP4725.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -103,9 +100,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="watchdog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DAC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Adafruit_MCP4725.cpp">

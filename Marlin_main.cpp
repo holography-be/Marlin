@@ -304,7 +304,7 @@ bool CooldownNoWait = true;
 bool target_direction;
 
 unsigned long lastTimeStatusSent = 0;
-unsigned long delaiStatusSent = 1000;
+unsigned long delaiStatusSent = 1000000;
 
 //Insert variables if CHDK is defined
 #ifdef CHDK
@@ -417,6 +417,10 @@ void suicide()
 
 void setup()
 {
+  // Init Interrupt PWM pour LaserPower
+  //sets Arduino Mega's pin 10 and 9 to frequency 31250.
+	TCCR2B = TCCR2B & B11111000 | 0x01;
+	LaserPWM = 0; // Laser Power OFF
 
   analogReference(EXTERNAL);  // for thermistors
   //digitalWrite(Relais1, HIGH);
@@ -562,32 +566,32 @@ bool myCode_seen(char code) {
 //////////	return (strtod(strchr_pointer, NULL));
 //////////}
 
-void receive_PixelSegment() {
-	int bufIndex = 0;
-	MYSERIAL.write(serial_char);
-	cmdbuffer[bufindw][bufIndex++] = 'A';
-	while (1) {
-		if (MYSERIAL.available() > 0) {
-			serial_char = MYSERIAL.read();
-			cmdbuffer[bufindw][bufIndex++] = serial_char;
-			MYSERIAL.write(serial_char);
-		}
-		if (bufIndex >= 198) break;
-	}
-	// vider le buffer pour avaler les fins de ligne si besoin ???
-	// 
-	MYSERIAL.println("");
-	bufindw = (bufindw + 1) % BUFSIZE;
-	buflen += 1;
-
-	if (Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
-		SERIAL_PROTOCOLLNPGM(MSG_OK);
-	}
-	else {
-		SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
-	}
-
-}
+//////////void receive_PixelSegment() {
+//////////	int bufIndex = 0;
+//////////	MYSERIAL.write(serial_char);
+//////////	cmdbuffer[bufindw][bufIndex++] = 'A';
+//////////	while (1) {
+//////////		if (MYSERIAL.available() > 0) {
+//////////			serial_char = MYSERIAL.read();
+//////////			cmdbuffer[bufindw][bufIndex++] = serial_char;
+//////////			MYSERIAL.write(serial_char);
+//////////		}
+//////////		if (bufIndex >= 198) break;
+//////////	}
+//////////	// vider le buffer pour avaler les fins de ligne si besoin ???
+//////////	// 
+//////////	MYSERIAL.println("");
+//////////	bufindw = (bufindw + 1) % BUFSIZE;
+//////////	buflen += 1;
+//////////
+//////////	if (Stopped == false) { // If printer is stopped by an error the G[0-3] codes are ignored.
+//////////		SERIAL_PROTOCOLLNPGM(MSG_OK);
+//////////	}
+//////////	else {
+//////////		SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+//////////	}
+//////////
+//////////}
 
 void get_command()
 {
@@ -790,7 +794,7 @@ void process_commands()
 			}
 			else {
 				// current level
-				LaserLevelForCommand = LaserControl.getLevel();
+				LaserLevelForCommand = LaserControl.getPower();
 			}
 		}
         prepare_move();
@@ -806,7 +810,7 @@ void process_commands()
 		}
 		else {
 			// current level
-			LaserLevelForCommand = LaserControl.getLevel();
+			LaserLevelForCommand = LaserControl.getPower();
 		}
         get_arc_coordinates();
         prepare_arc_move(true);
@@ -821,7 +825,7 @@ void process_commands()
 		}
 		else {
 			// current level
-			LaserLevelForCommand = LaserControl.getLevel();
+			LaserLevelForCommand = LaserControl.getPower();
 		}
         prepare_arc_move(false);
         return;
@@ -877,7 +881,7 @@ void process_commands()
 
     case 28: //G28 Home all Axis one at a time
 	  // Laser must be power off
-	  LaserControl.setLevel(0);
+	  LaserControl.setPower(0);
       saved_feedrate = feedrate;
       saved_feedmultiply = feedmultiply;
       feedmultiply = 100;
@@ -1302,9 +1306,9 @@ void process_commands()
 			  SERIAL_ECHOLN("Laser: ON");
 			  break;
 		  case 2:	// Set laser power
-			  if (code_seen('S')) { // 0->100
+			  if (code_seen('S')) { // 0->255
 				  laserPower = code_value_long();
-				  if ((laserPower >= 0) && (laserPower <= 100)) {
+				  if ((laserPower >= 0) && (laserPower <= 255)) {
 					  LaserControl.setPower(laserPower);
 				  }
 				  else {
@@ -1319,50 +1323,53 @@ void process_commands()
 			  SERIAL_ECHOPGM("LaserPower: ");
 			  SERIAL_ECHOLN(laserPower);
 			  break;
-		  case 4:	// set Laser level
-			  if (code_seen('S')) { // 0->255
-				  laserPower = code_value_long();
-				  if ((laserPower >= 0) && (laserPower <= 255)) {
-					  LaserControl.setLevel(laserPower);
-				  }
-				  else {
-					  SERIAL_ERROR_START;
-					  SERIAL_ERRORLN("LaserPower: Bad value");
-				  }
-			  }
-			  break;
-		  case 5:	// get Laser Level
-			  laserPower = LaserControl.getLevel();
-			  SERIAL_ECHO_START;
-			  SERIAL_ECHOPGM("LaserLevel: ");
-			  SERIAL_ECHOLN(laserPower);
-			  break;
+		  //case 4:	// set Laser level
+			 // if (code_seen('S')) { // 0->255
+				//  laserPower = code_value_long();
+				//  if ((laserPower >= 0) && (laserPower <= 255)) {
+				//	  //LaserControl.setLevel(laserPower);
+				//	  //MYSERIAL.println("send to nano");
+				//	  setLaserLevel(laserPower);
+				//	  //MYSERIAL.println("Level Set");
+				//  }
+				//  else {
+				//	  SERIAL_ERROR_START;
+				//	  SERIAL_ERRORLN("LaserPower: Bad value");
+				//  }
+			 // }
+			 // break;
+		  //case 5:	// get Laser Level
+			 // laserPower = LaserControl.getLevel();
+			 // SERIAL_ECHO_START;
+			 // SERIAL_ECHOPGM("LaserLevel: ");
+			 // SERIAL_ECHOLN(laserPower);
+			 // break;
 		  case 6: // Get Laser Temp
 			  laserTemp = LaserControl.getTemp();
 			  SERIAL_ECHO_START;
 			  SERIAL_ECHOPGM("LaserTemp: ");
 			  SERIAL_ECHOLN(laserTemp);
 			  break;
-		  case 7:	// Set Max Power
-			  if (code_seen('S')) {
-				  laserMaxPower = code_value_long();
-				  if (laserMaxPower > 0 && laserMaxPower < 100) {
-					  LaserControl.setMaxPower(laserMaxPower);
-				  }
-			  }
-			  break;
-		  case 8:
-			  laserMaxPower = LaserControl.getMaxPower();
-			  SERIAL_ECHO_START;
-			  SERIAL_ECHOPGM("LaserMaxPower: ");
-			  SERIAL_ECHOLN(laserMaxPower);
-			  break;
-		  case 9:
-			  laserMaxPower = LaserControl.getRealPower();
-			  SERIAL_ECHO_START;
-			  SERIAL_ECHOPGM("LaserRealPower: ");
-			  SERIAL_ECHOLN(laserMaxPower);
-			  break;
+		  //case 7:	// Set Max Power
+			 // if (code_seen('S')) {
+				//  laserMaxPower = code_value_long();
+				//  if (laserMaxPower > 0 && laserMaxPower < 100) {
+				//	  LaserControl.setMaxPower(laserMaxPower);
+				//  }
+			 // }
+			 // break;
+		  //case 8:
+			 // laserMaxPower = LaserControl.getMaxPower();
+			 // SERIAL_ECHO_START;
+			 // SERIAL_ECHOPGM("LaserMaxPower: ");
+			 // SERIAL_ECHOLN(laserMaxPower);
+			 // break;
+		  //case 9:
+			 // laserMaxPower = LaserControl.getRealPower();
+			 // SERIAL_ECHO_START;
+			 // SERIAL_ECHOPGM("LaserRealPower: ");
+			 // SERIAL_ECHOLN(laserMaxPower);
+			 // break;
 		  case 10:
 			  SERIAL_ECHO_START;
 			  SERIAL_ECHOPGM(MSG_FREE_MEMORY);
@@ -1526,7 +1533,7 @@ void controllerFan()
   {
     lastMotorCheck = millis();
 
-	if (!READ(X_ENABLE_PIN) || !READ(Y_ENABLE_PIN) || !READ(Z_ENABLE_PIN) || !READ(E0_ENABLE_PIN))
+	if (!READ(X_ENABLE_PIN) || !READ(Y_ENABLE_PIN) || !READ(Z_ENABLE_PIN) || !READ(E_ENABLE_PIN))
     {
       lastMotor = millis(); //... set time to NOW so the fan will turn on
     }

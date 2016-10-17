@@ -28,6 +28,7 @@
 ////#include "ultralcd.h"
 #include "language.h"
 #include "speed_lookuptable.h"
+
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
 #include <SPI.h>
 #endif
@@ -91,6 +92,8 @@ volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
 int * powerLevelForCurrentPixel;  // pointeur dans pixelSegment
 float current_X_Position;
 float next_X_Position;  // si la position courante atteind cette valeur, c'est un nouveau pixel;
+
+volatile uint8_t curX = 0;
 
 //===========================================================================
 //=============================functions         ============================
@@ -518,10 +521,10 @@ ISR(TIMER1_COMPA_vect)
 		//	current_X_Position = count_position[X_AXIS] / axis_steps_per_unit[X_AXIS];
 		//	//current_block->pixelSize;
 		//}
-		//sei();
-		//lcd.blink();
-		//cli();
-		//laserMaxPower = 0;
+		if (curX++ > 5) {
+			//setLaserLevel(random(0, 256));
+			curX = 0;
+		}
 
 		WRITE(X_STEP_PIN, INVERT_X_STEP_PIN);
       }
@@ -546,16 +549,15 @@ ISR(TIMER1_COMPA_vect)
         
       }
 
-      #ifndef ADVANCE
-        counter_e += current_block->steps_e;
-        if (counter_e > 0) {
-          WRITE_E_STEP(!INVERT_E_STEP_PIN);
-          counter_e -= current_block->step_event_count;
-          count_position[E_AXIS]+=count_direction[E_AXIS];
-          WRITE_E_STEP(INVERT_E_STEP_PIN);
-        }
-      #endif //!ADVANCE
-      step_events_completed += 1;
+	  counter_e += current_block->steps_e;
+	  if (counter_e > 0) {
+		  WRITE(E_STEP_PIN, !INVERT_E_STEP_PIN);
+		  counter_e -= current_block->step_event_count;
+		  count_position[E_AXIS] += count_direction[E_AXIS];
+		  WRITE(E_STEP_PIN, INVERT_E_STEP_PIN);
+	  }
+
+	  step_events_completed += 1;
       if (step_events_completed >= current_block->step_event_count) break;
     }
     // Calculare new timer value
